@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies outside source
         run: node scripts/setup.cjs
       - name: Test actual service and authorization boundaries
-        run: node --test tests/integration.test.cjs
+        run: node --test tests/*.test.cjs
       - name: Type check, compile and build Windows programs
         run: node scripts/build.cjs
       - uses: actions/upload-artifact@v4
