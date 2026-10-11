@@ -11,18 +11,18 @@ jobs:
   windows:
     runs-on: windows-latest
     timeout-minutes: 30
-    env:
-      HETUN_TOOLS_ROOT: ${{ runner.temp }}/hetun-tools
-      HETUN_THEME_BUILD_ROOT: ${{ runner.temp }}/hetun-tools/projects/hetun-theme-center
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check tag version
+      - name: Prepare external paths and check tag version
         id: metadata
         shell: pwsh
         run: |
+          $toolsRoot = Join-Path $env:RUNNER_TEMP "hetun-tools"
+          "HETUN_TOOLS_ROOT=$toolsRoot" >> $env:GITHUB_ENV
+          "HETUN_THEME_BUILD_ROOT=$(Join-Path $toolsRoot 'projects/hetun-theme-center')" >> $env:GITHUB_ENV
           $version = (Get-Content package.json | ConvertFrom-Json).version
           "version=$version" >> $env:GITHUB_OUTPUT
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag and package version differ' }
