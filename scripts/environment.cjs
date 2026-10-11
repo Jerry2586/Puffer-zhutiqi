@@ -1,0 +1,5 @@
+'use strict';
+const path=require('node:path'),os=require('node:os');
+function external(source,target,label){const resolved=path.resolve(target),rel=path.relative(source,resolved);if(!rel||(!path.isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('..'+path.sep)))throw Error(label+'必须在源码目录之外');return resolved;}
+function environment(){const source=path.resolve(__dirname,'..');const shared=external(source,process.env.HETUN_TOOLS_ROOT||path.join(process.env.LOCALAPPDATA||os.homedir(),'Programs/UniAppTools'),'环境目录');const root=external(source,process.env.HETUN_THEME_BUILD_ROOT||path.join(shared,'projects/hetun-theme-center'),'构建目录');const uni=external(source,process.env.HETUN_UNI_DEPS?path.dirname(process.env.HETUN_UNI_DEPS):path.join(root,'development/uni'),'uni依赖目录');const electron=external(source,process.env.HETUN_ELECTRON_DEV||path.join(root,'development/electron'),'Electron依赖目录');return {source,shared,root,film:path.resolve(process.env.HETUN_FILM_SOURCE||path.join(source,'shared-source')),uni,deps:path.join(uni,'node_modules'),electron};}
+module.exports={environment,external};

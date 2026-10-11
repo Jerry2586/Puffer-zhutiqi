@@ -1,0 +1,62 @@
+name: Build and verify theme center
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      HETUN_TOOLS_ROOT: ${{ runner.temp }}/hetun-tools
+      HETUN_THEME_BUILD_ROOT: ${{ runner.temp }}/hetun-tools/projects/hetun-theme-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check tag version
+        id: metadata
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          "version=$version" >> $env:GITHUB_OUTPUT
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag and package version differ' }
+      - name: Install dependencies outside source
+        run: node scripts/setup.cjs
+      - name: Test actual service and authorization boundaries
+        run: node --test tests/integration.test.cjs
+      - name: Type check, compile and build Windows programs
+        run: node scripts/build.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: theme-center-windows
+          path: |
+            ${{ env.HETUN_THEME_BUILD_ROOT }}/release/v${{ steps.metadata.outputs.version }}/*.exe
+            ${{ env.HETUN_THEME_BUILD_ROOT }}/release/v${{ steps.metadata.outputs.version }}/*.blockmap
+            ${{ env.HETUN_THEME_BUILD_ROOT }}/release/v${{ steps.metadata.outputs.version }}/SHA256SUMS.txt
+            ${{ env.HETUN_THEME_BUILD_ROOT }}/release/v${{ steps.metadata.outputs.version }}/release-info.json
+          if-no-files-found: error
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: theme-center-windows
+          path: release
+      - name: Verify and publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd release
+          sha256sum -c SHA256SUMS.txt
+          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --prerelease --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64主题制作软件。提供安装包与便携版，附SHA256校验。当前未配置代码签名，作为预发布版本交付。更新安装保留已保存主题；运营中心与客户端打包器独立。"

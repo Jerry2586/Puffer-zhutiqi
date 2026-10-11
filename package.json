@@ -1,0 +1,19 @@
+{
+  "name": "hetun-theme-center",
+  "version": "0.2.3",
+  "private": true,
+  "description": "河豚独立主题制作软件",
+  "main": "main.cjs",
+  "author": "Hetun",
+  "license": "UNLICENSED",
+  "scripts": {
+    "setup": "node scripts/setup.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "build:frontend": "node scripts/build.cjs --frontend-only",
+    "build": "node scripts/build.cjs"
+  },
+  "engines": {
+    "node": ">=22 <23",
+    "npm": ">=10 <11"
+  }
+}
