@@ -33,14 +33,14 @@ async function main(){
  console.log('已验证独立运行资源：主题服务、默认骨架和编译页面。');
  if(process.argv.includes('--frontend-only')){await fs.writeFile(path.join(root,'latest-frontend.json'),JSON.stringify({version:pkg.version,batch,compiler,resource},null,2));console.log(JSON.stringify({version:pkg.version,resource},null,2));return;}
  for(const name of ['main.cjs','preload.cjs','core','renderer','assets','package.json','README.md','ARCHITECTURE.md'])await fs.cp(path.join(source,name),path.join(stage,name),{recursive:true});
- await fs.writeFile(path.join(stage,'build-info.json'),JSON.stringify({version:pkg.version,builtAt:new Date().toISOString(),sourceRevision:revision},null,2));
+ await require('./authorization-trust.cjs').bundleTrust(stage);await fs.writeFile(path.join(stage,'build-info.json'),JSON.stringify({version:pkg.version,builtAt:new Date().toISOString(),sourceRevision:revision},null,2));
  const req=createRequire(path.join(electronDev,'package.json')),{build,Platform,Arch}=req('electron-builder'),electronPkg=req('electron/package.json');
  const release=path.join(root,'release','v'+pkg.version);await fs.mkdir(release,{recursive:true});
  process.env.ELECTRON_BUILDER_CACHE=path.join(shared,'cache/electron-builder');process.env.CSC_IDENTITY_AUTO_DISCOVERY='false';
  const artifacts=await build({projectDir:stage,targets:Platform.WINDOWS.createTarget(['dir','portable','nsis'],Arch.x64),config:{
   appId:'com.hetun.theme-center',productName:'河豚主题中心',electronVersion:electronPkg.version,electronDist:path.join(electronDev,'node_modules/electron/dist'),
   directories:{app:stage,output:release,buildResources:path.join(stage,'assets')},asar:true,npmRebuild:false,
-  files:['main.cjs','preload.cjs','core/**','renderer/**','assets/**','package.json','README.md','ARCHITECTURE.md','build-info.json'],
+  files:['authorization-trust.json','main.cjs','preload.cjs','core/**','renderer/**','assets/**','package.json','README.md','ARCHITECTURE.md','build-info.json'],
   extraResources:[{from:path.join(resource,'frontend'),to:'frontend'},{from:path.join(resource,'theme-service'),to:'theme-service'}],
   win:{icon:path.join(stage,'assets/theme-center.ico'),signAndEditExecutable:true},
   portable:{requestExecutionLevel:'user',artifactName:'Hetun-Theme-Center-'+pkg.version+'-x64.exe'},
