@@ -1,1 +1,36 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'none'; img-src 'self' data:"><title>河豚产品授权</title><link rel="stylesheet" href="style.css"><main><div class="badge">河豚 · 产品授权</div><h1>激活你的软件</h1><p>一个 Key，使用获授权的主题中心、打包器和影视中心。</p><section id="status" role="status">读取授权状态…</section><form id="activation"><label>授权 Key<input id="key" type="password" autocomplete="off" placeholder="输入河豚终端发放的 Key" required></label><button>联网激活</button></form><div class="actions"><button id="check">立即验证</button><button id="continue">进入软件</button></div><details><summary>离线迁移与恢复</summary><p>静默本地授权支持离线迁移。迁移包保存授权资料，项目文件另行备份；导入使用未激活的新安装。</p><label>迁移包密码<input id="password" type="password" autocomplete="new-password"></label><div class="actions"><button id="export">导出迁移包</button><button id="import">导入迁移包</button></div></details><p id="error" role="alert"></p><small>首次激活需要联网。离线期间继续按最后收到的有效授权使用，恢复连接后同步授权策略与使用记录。</small></main><script src="app.js"></script></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>河豚主题中心 · 软件激活</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="desktop-titlebar"><img src="../../assets/theme-center.svg" alt=""><span>河豚主题中心 · 软件激活</span></header>
+<main class="activation-shell">
+  <aside class="brand-panel">
+    <div class="brand"><img src="../../assets/theme-center.svg" alt="河豚主题中心标识"><div><strong>河豚主题中心</strong><span>PUFFER THEME STUDIO</span></div></div>
+    <div class="brand-story"><span class="eyebrow">为影视体验而设计</span><h1>让每一个界面，<br>都有你的风格。</h1><p>从骨架到装饰，把灵感变成<br>真正可用的影视主题。</p></div>
+    <div class="artwork" aria-hidden="true"><div class="art-orbit"></div><div class="canvas-card"><div class="canvas-bar"><i></i><i></i><i></i><span>THEME STUDIO</span></div><div class="canvas-hero"><span class="play">▶</span><div><small>YOUR NEXT STORY</small><b>精彩，由你定义</b></div></div><div class="canvas-tiles"><i></i><i></i><i></i></div><div class="canvas-lines"><i></i><i></i></div></div><div class="floating-label">✦ 自由创作 · 即时呈现</div></div>
+    <div class="brand-footer"><span>品牌</span><i></i><span>骨架</span><i></i><span>排版</span><i></i><span>装饰</span></div>
+  </aside>
+  <section class="form-panel" aria-labelledby="form-title">
+    <div class="form-top"><span class="product-tag">主题制作软件</span><span class="secure-label">签名授权验证</span></div>
+    <div class="form-content">
+      <span class="eyebrow purple">WELCOME TO PUFFER</span><h2 id="form-title">激活主题中心</h2><p class="intro" id="intro">输入你的授权 Key，开启主题创作。</p>
+      <div id="status" class="status-box" role="status" aria-live="polite">正在读取本机授权…</div>
+      <form id="activation" novalidate>
+        <label for="key">授权 Key</label><div class="key-field"><input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="粘贴 HTN_ 开头的完整 Key" aria-describedby="key-help" required><button id="toggle-key" class="visibility-button" type="button" aria-label="显示授权 Key" aria-pressed="false">显示</button></div>
+        <p class="field-help" id="key-help">由河豚终端签发，首次激活需要连接网络。</p>
+        <button id="activate" class="primary-button" type="submit">激活并进入主题中心 <span aria-hidden="true">→</span></button>
+      </form>
+      <div id="authorized-actions" hidden><button id="continue" class="primary-button" type="button">进入主题中心 <span aria-hidden="true">→</span></button><button id="check" class="text-button" type="button">重新验证授权</button></div>
+      <p id="error" class="feedback error" role="alert" hidden></p><p id="notice" class="feedback notice" role="status" hidden></p>
+      <details id="migration"><summary><span>已有授权？迁移到这台电脑</span><span class="chevron" aria-hidden="true">⌄</span></summary><div class="migration-content"><p>静默本地模式可导入离线迁移包。项目文件需另行备份；迁移包密码由导出时设置。</p><label for="password">迁移包密码</label><input id="password" type="password" autocomplete="new-password" placeholder="输入迁移包密码"><div class="migration-actions"><button id="import" class="secondary-button" type="button">导入迁移包</button><button id="export" class="secondary-button" type="button" hidden>导出迁移包</button></div></div></details>
+      <div class="help-note">没有 Key 或激活遇到问题，请联系授权提供方。</div>
+    </div>
+    <footer class="form-footer"><span>河豚产品体系 · 主题中心</span><span>授权后按终端策略使用</span></footer>
+  </section>
+</main>
+<script src="app.js"></script>
+</body></html>

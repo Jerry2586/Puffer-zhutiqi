@@ -15,6 +15,7 @@ async function diagnostic(update){Object.assign(runtime,update,{updatedAt:new Da
 function checkSender(event){const url=event.senderFrame?.url||'';if(event.senderFrame!==event.sender.mainFrame||BrowserWindow.fromWebContents(event.sender)!==win||!local||!url.startsWith(local.origin+'/'))throw Error('无效的软件通信来源');}
 async function boot(){
  authorization.auth.assert();
+ if(!resource)throw Error('缺少主题软件运行资源，请先完成本地前端构建。');
  if(local){await local.stop();local=null;}
  local=await startLocal({node:process.execPath,frontend:path.join(resource,'frontend'),service:path.join(resource,'theme-service'),state:path.join(root,'theme-service'),config:{},key:'',localAuthoring:true,authorize:()=>authorization.auth.assert(),logFile:path.join(root,'logs/service.log')});
  await win.webContents.session.cookies.set({url:local.origin,name:'hetun_session',value:local.cookie,path:'/api',httpOnly:true,sameSite:'strict',secure:false});
@@ -49,12 +50,12 @@ ipcMain.handle('theme:save-export',async(e,v)=>{
 if(!app.requestSingleInstanceLock())app.quit();else{
  app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.show();win.focus();}});
  app.whenReady().then(async()=>{
-  if(!resource)throw Error('缺少主题软件运行资源，请重新安装。');
+
   await appearance.load();
   try{await diagnostic({shortcutsRepaired:await repairShortcuts({app,shell,root,sourceIcon:path.join(__dirname,'assets/theme-center.ico')})});}catch(e){await diagnostic({shortcutError:e.message});}
   await fs.mkdir(path.join(root,'logs'),{recursive:true});win=new BrowserWindow(windowOptions());secureWindow(win);win.on('closed',()=>win=null);
   Menu.setApplicationMenu(Menu.buildFromTemplate([{label:'河豚主题中心',submenu:[{label:'授权与离线迁移',click:()=>authorization.show()},{label:'打开主题数据目录',click:()=>shell.openPath(root)},{type:'separator'},{label:'退出',role:'quit'}]},{label:'视图',submenu:[{role:'reload'},{role:'togglefullscreen'},{role:'resetZoom'},{role:'zoomIn'},{role:'zoomOut'}]},{label:'帮助',submenu:[{label:'关于河豚主题中心',click:()=>dialog.showMessageBox(win,{type:'info',title:'河豚主题中心',message:'河豚主题中心 '+app.getVersion(),detail:'独立主题制作软件 · 品牌 / 骨架 / 排版 / 装饰\n保存、预览并导出河豚主题包。'})}]}]));
-  try{authorization=await createDesktopAuthorization({app,BrowserWindow,ipcMain,dialog,safeStorage,root,product:'theme-center',parent:()=>win,onInvalid:async()=>{await local?.stop();local=null;win.hide();await authorization.show();if(authorization.auth.status().valid)await boot();else app.quit();}});await authorization.ready();await boot();}catch(e){await diagnostic({phase:'failed',error:e.message});await dialog.showMessageBox(win,{type:'error',title:'主题服务启动失败',message:e.message});app.quit();}
+  try{authorization=await createDesktopAuthorization({app,BrowserWindow,ipcMain,dialog,safeStorage,root,product:'theme-center',parent:()=>win,onInvalid:async()=>{await local?.stop();local=null;win.hide();await authorization.show();if(authorization.auth.status().valid)await boot();else app.quit();}});await diagnostic({phase:'awaiting-activation'});await authorization.ready();await boot();}catch(e){if(e.activationCanceled){app.quit();return;}await diagnostic({phase:'failed',error:e.message});await dialog.showMessageBox(win,{type:'error',title:'主题服务启动失败',message:e.message});app.quit();}
  }).catch(e=>{dialog.showErrorBox('河豚主题中心',e.message);app.quit();});
  app.on('window-all-closed',()=>app.quit());
  app.on('will-quit',e=>{if(quitting)return;authorization?.stop();e.preventDefault();quitting=true;Promise.resolve(local?.stop()).then(()=>diagnostic({phase:'stopped'})).finally(()=>app.quit());});
