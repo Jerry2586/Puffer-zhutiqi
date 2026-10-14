@@ -35,3 +35,14 @@ test('真实签名消息和强制更新，拒绝坏签名及错误摘要',async 
  f.options.clock=()=>clock;f.options.fetcher=async(url,opts)=>{const r=await old(url,opts);const value=await r.json();if(value.lease){const p=JSON.parse(Buffer.from(value.lease.payload,'base64url'));p.onlineGraceSeconds=259200;p.exp=p.iat+259200;p.licenseExpiresAt=new Date(f.now+10*86400000).toISOString();value.lease=f.sign(p);}return new Response(JSON.stringify(value),{status:r.status});};
  let a=await new Authorization(f.options).init();await a.check();f.offline(true);clock=f.now+86400000;a=await new Authorization(f.options).init();await a.launch();assert.equal(a.status().valid,true);clock=f.now+259200000;assert.equal(a.status().valid,false);clock=f.now;f.offline(false);f.deny();await a.check();assert.equal(a.status().valid,false);a=await new Authorization(f.options).init();assert.equal(a.status().valid,false);assert.match(a.status().message,/删除授权/);
  });
+
+test('升级后清除旧更新缓存，旧强制提示不阻止编辑',async t=>{
+ const f=await fixture(t),root=path.join(f.root,'center');const old=await new ProductCenter({auth:f.auth,root,version:'0.2.4'}).init();old.scope();old.data.update={currentVersion:'0.2.4',updateAvailable:true,force:true,release:{version:'0.2.5'}};await old.save();
+ const current=await new ProductCenter({auth:f.auth,root,version:'0.2.7'}).init();assert.equal(current.state().update,null);assert.doesNotThrow(()=>current.assertEditing());
+});
+test('签名有效也拒绝同版本或降级更新，禁止安装旧缓存包',async t=>{
+ const f=await fixture(t),center=await new ProductCenter({auth:f.auth,root:path.join(f.root,'center'),version:'0.2.7'}).init();
+ for(const version of ['0.2.6','0.2.7','0.2.7-beta.1']){f.auth.request=async()=>new Response(JSON.stringify(f.sign({schemaVersion:1,issuer:f.auth.base(),product:f.auth.product,checkedAt:new Date(f.now).toISOString(),currentVersion:'0.2.7',updateAvailable:true,release:{version}})));await assert.rejects(center.signed('/v1/updates','update'),/高于当前版本/);await assert.rejects(center.download(),/高于当前版本/);}
+ for(const version of ['0.2.8','0.2.10','0.3.0']){f.auth.request=async()=>new Response(JSON.stringify(f.sign({schemaVersion:1,issuer:f.auth.base(),product:f.auth.product,checkedAt:new Date(f.now).toISOString(),currentVersion:'0.2.7',updateAvailable:true,release:{version}})));assert.equal((await center.signed('/v1/updates','update')).release.version,version);}
+ const id=crypto.randomUUID();center.data.history=[{releaseId:id,status:'downloaded',version:'0.2.6'}];await assert.rejects(center.verifiedFile(id),/请先下载/);
+});
