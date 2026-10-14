@@ -4,7 +4,8 @@ const fs=require('node:fs/promises'),path=require('node:path');
 const {startLocal}=require('./core/local-service.cjs'),{readZip}=require('./core/zip.cjs');
 const root=process.env.HETUN_THEME_DATA||path.join(process.env.LOCALAPPDATA||app.getPath('appData'),'HetunThemeCenter');
 app.setPath('userData',path.join(root,'desktop'));
-let win,local,authorization,quitting=false;
+let win,local,authorization,productCenter,quitting=false;
+const {ProductCenter}=require('./core/product-center.cjs');
 const {createDesktopAuthorization}=require('./core/desktop-authorization.cjs');
 const {createAppearance}=require('./core/appearance.cjs'),{repairShortcuts,appId}=require('./core/windows-shortcuts.cjs');
 const appearance=createAppearance({root,nativeTheme,getWindow:()=>win});
@@ -17,8 +18,9 @@ async function boot(){
  authorization.auth.assert();
  if(!resource)throw Error('缺少主题软件运行资源，请先完成本地前端构建。');
  if(local){await local.stop();local=null;}
- local=await startLocal({node:process.execPath,frontend:path.join(resource,'frontend'),service:path.join(resource,'theme-service'),state:path.join(root,'theme-service'),config:{},key:'',localAuthoring:true,authorize:()=>authorization.auth.assert(),logFile:path.join(root,'logs/service.log')});
- await win.webContents.session.cookies.set({url:local.origin,name:'hetun_session',value:local.cookie,path:'/api',httpOnly:true,sameSite:'strict',secure:false});
+ if(!productCenter){productCenter=await new ProductCenter({auth:authorization.auth,root:path.join(root,'product-center'),version:app.getVersion(),install:async file=>{const result=await dialog.showMessageBox(win,{type:'question',title:'安装更新',message:'更新包已通过签名摘要校验，安装将关闭主题中心。',buttons:['取消','安装更新'],defaultId:0,cancelId:0});if(result.response!==1)return {cancelled:true};const error=await shell.openPath(file);if(error)throw Error(error);app.quit();return {started:true};}}).init();productCenter.start();}
+ local=await startLocal({node:process.execPath,frontend:path.join(resource,'frontend'),service:path.join(resource,'theme-service'),state:path.join(root,'theme-service'),config:{},key:'',localAuthoring:true,productCenter,authorize:()=>productCenter.assertEditing(),logFile:path.join(root,'logs/service.log')});
+ await win.webContents.session.cookies.set({url:local.origin,name:'hetun_session',value:local.cookie,path:'/',httpOnly:true,sameSite:'strict',secure:false});
  await win.loadURL(local.origin+'/#/pages/studio/index');win.show();
  await diagnostic({phase:'ready',origin:local.origin,api:local.api,servicePid:local.child.pid,windowVisible:win.isVisible(),title:win.getTitle()});
 }
@@ -58,5 +60,5 @@ if(!app.requestSingleInstanceLock())app.quit();else{
   try{authorization=await createDesktopAuthorization({app,BrowserWindow,ipcMain,dialog,safeStorage,root,product:'theme-center',parent:()=>win,onInvalid:async()=>{await local?.stop();local=null;win.hide();await authorization.show();if(authorization.auth.status().valid)await boot();else app.quit();}});await diagnostic({phase:'awaiting-activation'});await authorization.ready();await boot();}catch(e){if(e.activationCanceled){app.quit();return;}await diagnostic({phase:'failed',error:e.message});await dialog.showMessageBox(win,{type:'error',title:'主题服务启动失败',message:e.message});app.quit();}
  }).catch(e=>{dialog.showErrorBox('河豚主题中心',e.message);app.quit();});
  app.on('window-all-closed',()=>app.quit());
- app.on('will-quit',e=>{if(quitting)return;authorization?.stop();e.preventDefault();quitting=true;Promise.resolve(local?.stop()).then(()=>diagnostic({phase:'stopped'})).finally(()=>app.quit());});
+ app.on('will-quit',e=>{if(quitting)return;authorization?.stop();productCenter?.stop();e.preventDefault();quitting=true;Promise.resolve(local?.stop()).then(()=>diagnostic({phase:'stopped'})).finally(()=>app.quit());});
 }
