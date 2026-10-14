@@ -67,4 +67,4 @@ jobs:
         run: |
           cd release
           sha256sum -c SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64主题制作软件。提供安装包与便携版，附SHA256校验。正式发布，当前未配置 Windows 代码签名。包含在线与静默授权规则更新、公告、版本更新与云端记录。更新安装保留已保存主题；运营中心与客户端打包器独立。"
+          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64主题制作软件。提供安装包与便携版，附SHA256校验。正式发布，当前未配置 Windows 代码签名。设置集中管理授权状态、公告、版本更新、云端记录和使用指南，主导航精简并保留未读通知与日夜切换。更新安装保留已保存主题；运营中心与客户端打包器独立。"
