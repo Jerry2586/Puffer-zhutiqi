@@ -28,7 +28,15 @@ jobs:
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag and package version differ' }
       - name: Install dependencies outside source
         run: node scripts/setup.cjs
+      - name: Checkout matching terminal integration fixture
+        uses: actions/checkout@v4
+        with:
+          repository: Jerry2586/Puffer-zhongduan
+          ref: 04c3c719f2db48ee0fd7ee62642386816667ce08
+          path: .terminal-integration
       - name: Test actual service and authorization boundaries
+        env:
+          HETUN_TERMINAL_SOURCE: ${{ github.workspace }}/.terminal-integration
         run: node --test tests/*.test.cjs
       - name: Type check, compile and build Windows programs
         run: node scripts/build.cjs
@@ -52,11 +60,11 @@ jobs:
         with:
           name: theme-center-windows
           path: release
-      - name: Verify and publish prerelease
+      - name: Verify and publish release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           cd release
           sha256sum -c SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --prerelease --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64主题制作软件。提供安装包与便携版，附SHA256校验。当前未配置代码签名，作为预发布版本交付。更新安装保留已保存主题；运营中心与客户端打包器独立。"
+          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64主题制作软件。提供安装包与便携版，附SHA256校验。正式发布，当前未配置 Windows 代码签名。包含在线与静默授权规则更新、公告、版本更新与云端记录。更新安装保留已保存主题；运营中心与客户端打包器独立。"

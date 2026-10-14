@@ -2,7 +2,7 @@
 import WorkbenchNavIcon from './WorkbenchNavIcon.vue';
 import {ref,onMounted,onUnmounted,computed,watch} from 'vue';
 const props=defineProps<{page:string}>();const emit=defineEmits<{(e:'counts',announcements:number,updates:number):void}>();
-const state=ref<any>({items:[],history:[],version:'0.2.4',authorization:{},update:null}),busy=ref(false),error=ref(''),detail=ref<any>(null),key=ref(''),downloaded=ref('');let timer:ReturnType<typeof setInterval>|undefined;
+const state=ref<any>({items:[],history:[],version:'0.2.5',authorization:{},update:null}),busy=ref(false),error=ref(''),detail=ref<any>(null),key=ref(''),downloaded=ref('');let timer:ReturnType<typeof setInterval>|undefined;
 async function request(action:string,input:any={}){const r=await fetch('/desktop/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input),credentials:'same-origin'});const v=await r.json();if(!r.ok)throw Error(v.error||'本机产品服务不可用');return v;}
 function apply(v:any){state.value=v;error.value=v.error||'';emit('counts',v.items.filter((x:any)=>x.kind==='announcement'&&x.localStatus==='received').length,v.items.filter((x:any)=>x.kind==='update'&&x.localStatus==='received').length+(v.update?.updateAvailable?1:0));downloaded.value=v.history.find((h:any)=>h.status==='downloaded'&&h.releaseId===v.update?.release?.id)?.releaseId||'';if(!detail.value)detail.value=v.items.find((x:any)=>x.kind==='announcement'&&['popup','maintenance'].includes(x.type)&&x.localStatus==='received')||null;}
 async function refresh(remote=false){try{apply(await request(remote?'check':'state'));}catch(e:any){error.value=e.message;}}

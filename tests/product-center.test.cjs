@@ -29,3 +29,9 @@ test('真实签名消息和强制更新，拒绝坏签名及错误摘要',async 
  corrupt=true;await assert.rejects(center.download(),/大小不匹配|校验失败/);assert.equal(center.state().history.length,0);corrupt=false;const downloaded=await center.download();assert.equal(downloaded.saved,true);const file=await center.verifiedFile(id);await fs.writeFile(file.file,'tamper');await assert.rejects(center.verifiedFile(id),/已变化/);
  auth.request=async()=>new Response(JSON.stringify({algorithm:'Ed25519',payload:'e30',signature:'invalid'}));await center.sync();assert.match(center.state().error,/签名/);
 });
+
+ test('新在线签名允许72小时网络波动、重启不延长且可信撤销持久化',async t=>{
+ const f=await fixture(t,'online');let clock=f.now;const old=f.options.fetcher;
+ f.options.clock=()=>clock;f.options.fetcher=async(url,opts)=>{const r=await old(url,opts);const value=await r.json();if(value.lease){const p=JSON.parse(Buffer.from(value.lease.payload,'base64url'));p.onlineGraceSeconds=259200;p.exp=p.iat+259200;p.licenseExpiresAt=new Date(f.now+10*86400000).toISOString();value.lease=f.sign(p);}return new Response(JSON.stringify(value),{status:r.status});};
+ let a=await new Authorization(f.options).init();await a.check();f.offline(true);clock=f.now+86400000;a=await new Authorization(f.options).init();await a.launch();assert.equal(a.status().valid,true);clock=f.now+259200000;assert.equal(a.status().valid,false);clock=f.now;f.offline(false);f.deny();await a.check();assert.equal(a.status().valid,false);a=await new Authorization(f.options).init();assert.equal(a.status().valid,false);assert.match(a.status().message,/删除授权/);
+ });
