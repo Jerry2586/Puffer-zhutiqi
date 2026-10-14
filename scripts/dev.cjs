@@ -4,6 +4,8 @@ const fs=require('node:fs/promises'),path=require('node:path'),crypto=require('n
 const {environment}=require('./environment.cjs'),{Authorization}=require('../core/authorization.cjs'),{ProductCenter}=require('../core/product-center.cjs'),{startLocal}=require('../core/local-service.cjs'),{loadTerminalTrust}=require('../core/terminal-trust.cjs');
 async function main(){
  const env=environment(),root=path.join(env.root,'local-preview'),pkg=require('../package.json');await fs.mkdir(root,{recursive:true});
+ console.log('正在编译当前源码预览（不生成安装包）…');
+ await new Promise((resolve,reject)=>{const child=spawn(process.execPath,[path.join(__dirname,'build.cjs'),'--frontend-only'],{cwd:env.source,windowsHide:true,stdio:'inherit'});child.once('error',reject);child.once('exit',code=>code===0?resolve():reject(Error('预览编译失败，未启动旧版页面')));});
  const secretFile=path.join(root,'preview-secret.bin');let secret;try{secret=await fs.readFile(secretFile);}catch(e){if(e.code!=='ENOENT')throw e;secret=crypto.randomBytes(32);await fs.writeFile(secretFile,secret,{mode:0o600,flag:'wx'});}
  const encrypt=text=>{const iv=crypto.randomBytes(12),c=crypto.createCipheriv('aes-256-gcm',secret,iv),body=Buffer.concat([c.update(text,'utf8'),c.final()]);return Buffer.concat([iv,c.getAuthTag(),body]);};
  const decrypt=b=>{const c=crypto.createDecipheriv('aes-256-gcm',secret,b.subarray(0,12));c.setAuthTag(b.subarray(12,28));return Buffer.concat([c.update(b.subarray(28)),c.final()]).toString('utf8');};

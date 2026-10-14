@@ -1,0 +1,7 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),test=require('node:test');
+const source=fs.readFileSync('renderer/workbench/ProductCenter.vue','utf8');
+function harness(fail=false){const code=source.slice(source.indexOf('function apply('),source.indexOf('const announcements=')).replaceAll(' as any','').replaceAll(':any','').replaceAll(':string','');const context={state:{value:{}},error:{value:''},detail:{value:null},downloaded:{value:''},busy:{value:false},key:{value:''},emit(){},window:{},request:async action=>{if(fail&&action==='ack')throw Error('回执保存失败');return {items:[],history:[],error:'终端同步失败'};}};vm.createContext(context);vm.runInContext(code,context);return context;}
+test('remote synchronization errors survive successful local polling',async()=>{const h=harness();await h.refresh();assert.equal(h.error.value,'终端同步失败');});
+test('failed announcement confirmation leaves the announcement open',async()=>{const h=harness(true);h.detail.value={id:'notice',revision:1,requireConfirmation:true};await h.close();assert.equal(h.detail.value.id,'notice');assert.equal(h.error.value,'回执保存失败');});
+test('successful announcement confirmation closes the announcement',async()=>{const h=harness();h.detail.value={id:'notice',revision:1,requireConfirmation:true};await h.close();assert.equal(h.detail.value,null);});
+
