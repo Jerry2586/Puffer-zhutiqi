@@ -46,3 +46,25 @@ test('签名有效也拒绝同版本或降级更新，禁止安装旧缓存包',
  for(const version of ['0.2.8','0.2.10','0.3.0']){f.auth.request=async()=>new Response(JSON.stringify(f.sign({schemaVersion:1,issuer:f.auth.base(),product:f.auth.product,checkedAt:new Date(f.now).toISOString(),currentVersion:'0.2.7',updateAvailable:true,release:{version}})));assert.equal((await center.signed('/v1/updates','update')).release.version,version);}
  const id=crypto.randomUUID();center.data.history=[{releaseId:id,status:'downloaded',version:'0.2.6'}];await assert.rejects(center.verifiedFile(id),/请先下载/);
 });
+
+test('更新流返回真实字节进度，校验成功才自动调用安装',async t=>{
+ const f=await fixture(t),body=Buffer.from('trusted installer payload'),id=crypto.randomUUID();let resume,mid;
+ const midpoint=new Promise(r=>mid=r),gate=new Promise(r=>resume=r);let installs=0;
+ const release={id,product:'theme-center',kind:'installer',platform:'windows',arch:'x64',version:'0.2.8',filename:'Setup.exe',bytes:body.length,sha256:crypto.createHash('sha256').update(body).digest('hex'),downloadPath:'/v1/releases/'+id+'/download'};
+ const center=await new ProductCenter({auth:f.auth,root:path.join(f.root,'center'),version:'0.2.7',install:async file=>{installs++;assert.deepEqual(await fs.readFile(file),body);return {started:true};}}).init();
+ f.auth.request=async route=>{if(route===release.downloadPath)return {body:{async *[Symbol.asyncIterator](){yield body.subarray(0,7);mid();await gate;yield body.subarray(7);}}};if(route.startsWith('/v1/updates'))return new Response(JSON.stringify(f.sign({schemaVersion:1,issuer:f.auth.base(),product:f.auth.product,checkedAt:new Date(f.now).toISOString(),currentVersion:'0.2.7',updateAvailable:true,release})));return new Response('{}');};
+ const updating=center.command('update');await midpoint;assert.equal(center.state().transfer.bytes,7);assert.equal(center.state().transfer.percent,Math.floor(7/body.length*100));assert.equal(installs,0);await assert.rejects(center.command('update'),/正在进行/);resume();assert.equal((await updating).started,true);assert.equal(installs,1);assert.equal(center.state().transfer.phase,'installing');assert.equal(center.state().history[0].status,'downloaded');
+});
+test('下载损坏不会自动安装并返回失败状态',async t=>{
+ const f=await fixture(t),id=crypto.randomUUID();let installs=0;const release={id,product:'theme-center',kind:'installer',platform:'windows',arch:'x64',version:'0.2.8',filename:'Setup.exe',bytes:4,sha256:crypto.createHash('sha256').update('good').digest('hex'),downloadPath:'/v1/releases/'+id+'/download'};
+ f.auth.request=async route=>route===release.downloadPath?new Response('evil'):route.startsWith('/v1/updates')?new Response(JSON.stringify(f.sign({schemaVersion:1,issuer:f.auth.base(),product:f.auth.product,checkedAt:new Date(f.now).toISOString(),currentVersion:'0.2.7',updateAvailable:true,release}))):new Response('{}');
+ const center=await new ProductCenter({auth:f.auth,root:path.join(f.root,'center'),version:'0.2.7',install:async()=>{installs++;}}).init();await assert.rejects(center.command('update'),/校验失败/);assert.equal(installs,0);assert.equal(center.state().transfer.phase,'failed');assert.equal(center.state().history.length,0);
+});
+
+test('便携 EXE 不能冒充安装包自动执行',async t=>{
+ const f=await fixture(t),id=crypto.randomUUID(),body=Buffer.from('portable executable');let installs=0;
+ const center=await new ProductCenter({auth:f.auth,root:path.join(f.root,'center'),version:'0.2.7',install:async()=>{installs++;}}).init();
+ await fs.mkdir(path.join(center.root,'downloads'));await fs.writeFile(path.join(center.root,'downloads',id+'.exe'),body);
+ center.data.history.push({releaseId:id,version:'0.2.8',status:'downloaded',kind:'software',filename:'Hetun-Theme-Center-0.2.8-x64.exe',bytes:body.length,sha256:crypto.createHash('sha256').update(body).digest('hex')});
+ await assert.rejects(center.command('install',{releaseId:id}),/EXE 安装包/);assert.equal(installs,0);
+});

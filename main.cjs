@@ -6,6 +6,8 @@ const root=process.env.HETUN_THEME_DATA||path.join(process.env.LOCALAPPDATA||app
 app.setPath('userData',path.join(root,'desktop'));
 let win,local,authorization,productCenter,quitting=false;
 const {ProductCenter}=require('./core/product-center.cjs');
+const {createDesktopUpdater}=require('./core/desktop-update.cjs');
+const desktopUpdater=createDesktopUpdater({app});
 const {createDesktopAuthorization}=require('./core/desktop-authorization.cjs');
 const {createAppearance}=require('./core/appearance.cjs'),{repairShortcuts,appId}=require('./core/windows-shortcuts.cjs');
 const appearance=createAppearance({root,nativeTheme,getWindow:()=>win});
@@ -18,7 +20,7 @@ async function boot(){
  authorization.auth.assert();
  if(!resource)throw Error('缺少主题软件运行资源，请先完成本地前端构建。');
  if(local){await local.stop();local=null;}
- if(!productCenter){productCenter=await new ProductCenter({auth:authorization.auth,root:path.join(root,'product-center'),version:app.getVersion(),install:async file=>{const result=await dialog.showMessageBox(win,{type:'question',title:'安装更新',message:'更新包已通过签名摘要校验，安装将关闭主题中心。',buttons:['取消','安装更新'],defaultId:0,cancelId:0});if(result.response!==1)return {cancelled:true};const error=await shell.openPath(file);if(error)throw Error(error);app.quit();return {started:true};}}).init();productCenter.start();}
+ if(!productCenter){productCenter=await new ProductCenter({auth:authorization.auth,root:path.join(root,'product-center'),version:app.getVersion(),install:file=>desktopUpdater.install(file)}).init();productCenter.start();}
  local=await startLocal({node:process.execPath,frontend:path.join(resource,'frontend'),service:path.join(resource,'theme-service'),state:path.join(root,'theme-service'),config:{},key:'',localAuthoring:true,productCenter,authorize:()=>productCenter.assertEditing(),logFile:path.join(root,'logs/service.log')});
  await win.webContents.session.cookies.set({url:local.origin,name:'hetun_session',value:local.cookie,path:'/',httpOnly:true,sameSite:'strict',secure:false});
  await win.loadURL(local.origin+'/#/pages/studio/index');win.show();
@@ -29,7 +31,7 @@ function secureWindow(w){
  w.on('show',()=>diagnostic({windowVisible:true}));
  w.webContents.on('will-prevent-unload',event=>{
   const choice=dialog.showMessageBoxSync(w,{type:'question',title:'还有未保存的主题修改',message:'主题修改尚未保存。',detail:'选择继续编辑，可以先保存草稿。离开将放弃本次未保存的修改。',buttons:['继续编辑','离开并放弃修改'],defaultId:0,cancelId:0,noLink:true});
-  if(choice===1)event.preventDefault();
+  if(choice===1)event.preventDefault();else desktopUpdater.cancel();
  });
  w.webContents.setWindowOpenHandler(({url})=>{try{if(new URL(url).protocol==='https:')shell.openExternal(url);}catch{}return {action:'deny'};});
  w.webContents.on('will-navigate',(e,url)=>{if(local&&url.startsWith(local.origin+'/'))return;e.preventDefault();});
@@ -60,5 +62,5 @@ if(!app.requestSingleInstanceLock())app.quit();else{
   try{authorization=await createDesktopAuthorization({app,BrowserWindow,ipcMain,dialog,safeStorage,root,product:'theme-center',parent:()=>win,onInvalid:async()=>{await local?.stop();local=null;win.hide();await authorization.show();if(authorization.auth.status().valid)await boot();else app.quit();}});await diagnostic({phase:'awaiting-activation'});await authorization.ready();await boot();}catch(e){if(e.activationCanceled){app.quit();return;}await diagnostic({phase:'failed',error:e.message});await dialog.showMessageBox(win,{type:'error',title:'主题服务启动失败',message:e.message});app.quit();}
  }).catch(e=>{dialog.showErrorBox('河豚主题中心',e.message);app.quit();});
  app.on('window-all-closed',()=>app.quit());
- app.on('will-quit',e=>{if(quitting)return;authorization?.stop();productCenter?.stop();e.preventDefault();quitting=true;Promise.resolve(local?.stop()).then(()=>diagnostic({phase:'stopped'})).finally(()=>app.quit());});
+ app.on('will-quit',e=>{if(quitting)return;authorization?.stop();productCenter?.stop();e.preventDefault();quitting=true;desktopUpdater.acceptQuit();Promise.resolve(local?.stop()).then(()=>desktopUpdater.finish()).then(()=>diagnostic({phase:'stopped'})).catch(async error=>{await diagnostic({updateInstallError:error.message});dialog.showErrorBox('更新安装未启动',error.message+'\n即将重新打开主题中心，请稍后重试。');app.relaunch();}).finally(()=>app.quit());});
 }
