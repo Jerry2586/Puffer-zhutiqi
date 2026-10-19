@@ -58,7 +58,7 @@ test('无Key本地作者模式实际保存发布导出，并保留会话与来�
  t.after(async()=>{await local?.stop();await fs.rm(root,{recursive:true,force:true});});
  const frontend=path.join(root,'frontend');await fs.mkdir(frontend);await fs.writeFile(path.join(frontend,'index.html'),'<html>local</html>');
  const stateDir=path.join(root,'state');await fs.mkdir(stateDir);const previous='{ "key": "existing-value" }';await fs.writeFile(path.join(stateDir,'cloud-license.json'),previous);
- local=await startLocal({node:process.execPath,frontend,service:film,state:stateDir,config:{},key:'',localAuthoring:true});
+ local=await startLocal({node:process.execPath,frontend,service:film,state:stateDir,config:{},key:'',linkDirectory:path.join(root,'test-local-link'),localAuthoring:true});
  const headers={Cookie:'hetun_session='+local.cookie,Origin:local.origin,'X-Hetun-Client':'studio','Content-Type':'application/json'};
  assert.equal((await fetch(local.origin+'/api/admin/state')).status,401);
  const status=await fetch(local.origin+'/api/admin/license',{headers});assert.equal(status.status,404);assert.equal((await status.json()).code,'OFFLINE_ONLY');

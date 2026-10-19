@@ -8,7 +8,7 @@ test('离线服务拒绝CMS/播放/授权/云端接口，忽略旧联网配置�
  const front=path.join(root,'front'),state=path.join(root,'state');await fs.mkdir(front);await fs.mkdir(state);await fs.writeFile(path.join(front,'index.html'),'<html>offline</html>');
  // A corrupt, obsolete key file must never be read by offline authoring.
  await fs.writeFile(path.join(state,'cloud-license.json'),'old-invalid-key-cache');
- async function boot(){local=await startLocal({node:process.execPath,frontend:front,service:path.resolve('shared-source'),state,localAuthoring:true,browserPreview:true});}
+ async function boot(){local=await startLocal({node:process.execPath,frontend:front,service:path.resolve('shared-source'),state,linkDirectory:path.join(root,'test-local-link'),localAuthoring:true,browserPreview:true});}
  await boot();let stored=JSON.parse(await fs.readFile(path.join(state,'theme-state.json'),'utf8'));stored.cmsBase='http://127.0.0.1:'+upstream.address().port+'/api.php/provide/vod/';await local.stop();await fs.writeFile(path.join(state,'theme-state.json'),JSON.stringify(stored));await boot();
  const headers={Cookie:'hetun_session='+local.cookie,Origin:local.origin,'X-Hetun-Client':'studio','Content-Type':'application/json'};
  for(const [route,method] of [['/api/admin/cms/status','GET'],['/api/admin/cms/check','POST'],['/api/admin/cms','PUT'],['/api/admin/license','GET'],['/api/admin/license','PUT'],['/api/catalog','GET'],['/api/catalog/categories','GET'],['/api/playback','POST'],['/api/member/config','GET'],['/desktop/state','POST'],['/desktop/activate','POST']]){

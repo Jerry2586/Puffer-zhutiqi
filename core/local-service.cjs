@@ -1,12 +1,26 @@
 'use strict';
 const fs=require('node:fs/promises'),path=require('node:path'),http=require('node:http'),net=require('node:net'),{spawn}=require('node:child_process');
+const {queueTheme,readStatus,atomic,linkRoot}=require('./local-link.cjs');
+const {createCatalog}=require('./local-catalog.cjs');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.jpg':'image/jpeg','.webp':'image/webp','.woff2':'font/woff2','.ttf':'font/ttf'};
 async function freePort(){const s=net.createServer();await new Promise((ok,no)=>{s.once('error',no);s.listen(0,'127.0.0.1',ok);});const port=s.address().port;await new Promise(ok=>s.close(ok));return port;}
-async function startLocal({node,frontend,service,state,config={},key,logFile,localAuthoring=false,browserPreview=false}){
+async function startLocal({node,frontend,service,state,config={},key,logFile,localAuthoring=false,browserPreview=false,linkDirectory=linkRoot()}){
  await fs.mkdir(state,{recursive:true});const apiPort=await freePort(),api='http://127.0.0.1:'+apiPort;let sessionCookie='';
  const proxy=http.createServer(async(req,res)=>{try{
   if(!/^127\.0\.0\.1:\d+$/.test(req.headers.host||'')){res.writeHead(403);return res.end('Invalid host');}
   const url=new URL(req.url,'http://127.0.0.1');
+  if(url.pathname==='/api/admin/local-packer'){
+   res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
+   const cookie=(req.headers.cookie||'').split(';').map(v=>v.trim()).find(v=>v.startsWith('hetun_session='))?.slice(14);
+   if(!localAuthoring||!sessionCookie||cookie!==sessionCookie){res.writeHead(401);return res.end(JSON.stringify({error:'本机会话无效'}));}
+   if(req.method==='GET'){res.writeHead(200);return res.end(JSON.stringify(await readStatus(url.searchParams.get('id'),linkDirectory)));}
+   if(req.method!=='POST'){res.writeHead(405);return res.end();}
+   if(req.headers.origin!==origin||req.headers['x-hetun-client']!=='studio'||!String(req.headers['content-type']||'').startsWith('application/json')){res.writeHead(403);return res.end(JSON.stringify({error:'本机请求来源无效'}));}
+   let body='',size=0;for await(const chunk of req){size+=chunk.length;if(size>4096)throw Error('请求过大');body+=chunk.toString();}const input=JSON.parse(body);
+   if(typeof input.template!=='string'||!input.template||input.template.length>100)throw Error('请选择主题');
+   const exported=await fetch(api+'/api/admin/export?template='+encodeURIComponent(input.template),{headers:{Cookie:'hetun_session='+sessionCookie},signal:AbortSignal.timeout(10000)});const bundle=await exported.json();if(!exported.ok)throw Error(bundle.error||'主题导出失败');
+   const result=await queueTheme(bundle,linkDirectory);res.writeHead(200);return res.end(JSON.stringify(result));
+  }
   if(url.pathname.startsWith('/desktop/')){res.writeHead(404,{'Content-Type':'application/json'});return res.end(JSON.stringify({error:'离线主题中心不提供云端功能。',code:'OFFLINE_ONLY'}));}
   if(url.pathname.startsWith('/api/')){
    const headers={...req.headers,host:'127.0.0.1:'+apiPort};delete headers.connection;
@@ -25,8 +39,16 @@ async function startLocal({node,frontend,service,state,config={},key,logFile,loc
  if(!localAuthoring){if(config.publicKey)await fs.writeFile(path.join(state,'trusted-public.pem'),config.publicKey,{mode:0o600});await fs.writeFile(path.join(state,'cloud-license.json'),JSON.stringify({key:key||''}),{mode:0o600});}
  const child=spawn(node,[...(localAuthoring?['--require',path.join(__dirname,'offline-network.cjs')]:[]),path.join(service,'server/index.mjs')],{windowsHide:true,env:{...process.env,ELECTRON_RUN_AS_NODE:'1',HETUN_STATE_DIR:state,HETUN_HOST:'127.0.0.1',HETUN_PORT:String(apiPort),HETUN_PUBLIC_ORIGIN:origin,HETUN_PRODUCT_MODE:'theme-center',HETUN_LOCAL_THEME_AUTHORING:localAuthoring?'1':'0',HETUN_LICENSE_URL:config.url||'',HETUN_LICENSE_DOMAIN:config.domain||'127.0.0.1',HETUN_LICENSE_PUBLIC_KEY_FILE:config.publicKey?path.join(state,'trusted-public.pem'):''},stdio:['ignore','pipe','pipe']});
  let failure='',exited=false;child.once('error',e=>{failure=e.message;exited=true;});child.once('exit',()=>{exited=true;});for(const stream of [child.stdout,child.stderr])stream.on('data',b=>{failure=(failure+b.toString()).slice(-8000);if(logFile)fs.appendFile(logFile,b).catch(()=>{});});
- let stopping;function stop(){if(stopping)return stopping;stopping=(async()=>{proxy.closeAllConnections();await new Promise(ok=>proxy.close(ok));if(!exited)await new Promise(ok=>{const timer=setTimeout(()=>{child.kill('SIGKILL');ok();},3000);child.once('exit',()=>{clearTimeout(timer);ok();});child.kill();});})();return stopping;}
+ let catalogTimer,catalogWork;
+ let stopping;function stop(){if(stopping)return stopping;stopping=(async()=>{clearInterval(catalogTimer);await catalogWork?.catch(()=>{});proxy.closeAllConnections();await new Promise(ok=>proxy.close(ok));if(!exited)await new Promise(ok=>{const timer=setTimeout(()=>{child.kill('SIGKILL');ok();},3000);child.once('exit',()=>{clearTimeout(timer);ok();});child.kill();});})();return stopping;}
  try{let ready=false;for(let i=0;i<100;i++){if(exited)throw Error('主题服务启动失败：'+failure);try{const r=await fetch(api+'/api/health',{signal:AbortSignal.timeout(1000)});if(r.ok){ready=true;break;}}catch{}await new Promise(ok=>setTimeout(ok,100));}if(!ready)throw Error('主题服务启动超时');
- const creds=JSON.parse(await fs.readFile(path.join(state,'admin-credentials.json'),'utf8'));const login=await fetch(api+'/api/admin/login',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Hetun-Client':'studio'},body:JSON.stringify({username:creds.username,password:creds.password})});if(!login.ok)throw Error('本机主题会话初始化失败');const cookie=login.headers.get('set-cookie')?.match(/hetun_session=([^;]+)/)?.[1];if(!cookie)throw Error('本机会话缺失');sessionCookie=cookie;return {origin,api,cookie,child,stop};}catch(e){await stop();throw e;}
+ const creds=JSON.parse(await fs.readFile(path.join(state,'admin-credentials.json'),'utf8'));const login=await fetch(api+'/api/admin/login',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Hetun-Client':'studio'},body:JSON.stringify({username:creds.username,password:creds.password})});if(!login.ok)throw Error('本机主题会话初始化失败');const cookie=login.headers.get('set-cookie')?.match(/hetun_session=([^;]+)/)?.[1];if(!cookie)throw Error('本机会话缺失');sessionCookie=cookie;
+ if(localAuthoring){
+  const read=async route=>{const response=await fetch(api+route,{headers:{Cookie:'hetun_session='+sessionCookie},signal:AbortSignal.timeout(10000)});const data=await response.json();if(!response.ok)throw Error(data.error||'本机主题库读取失败');return data;};
+  const catalog=createCatalog({root:linkDirectory,load:async()=>(await read('/api/admin/state')).templates,exportTheme:id=>read('/api/admin/export?template='+encodeURIComponent(id))});
+  const refresh=()=>{catalogWork=(async()=>{let syncError='';try{await catalog.sync();}catch(e){syncError=e.message;if(logFile)fs.appendFile(logFile,'本机主题库同步失败：'+e.message+'\n').catch(()=>{});}await atomic(path.join(linkDirectory,'theme-center.json'),{protocol:1,updatedAt:new Date().toISOString(),syncError});})().catch(()=>{});return catalogWork;};
+  await refresh();catalogTimer=setInterval(refresh,2000);catalogTimer.unref?.();
+ }
+ return {origin,api,cookie,child,stop};}catch(e){await stop();throw e;}
 }
 module.exports={startLocal};

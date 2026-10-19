@@ -38,3 +38,5 @@ page{height:100%;overflow:hidden}uni-page-body{height:100%}.workbench{--bg:#1012
 @media(max-width:700px){.product-host.settings-layout{flex-direction:column;overflow:auto}.settings-navigation{width:100%;overflow:visible;padding:18px 16px;border-right:0;border-bottom:1px solid var(--line)}.settings-intro,.settings-links small,.settings-footer{display:none}.settings-heading{padding:0}.settings-heading h1{font-size:22px}.settings-links{flex-direction:row;flex-wrap:wrap;gap:6px;margin-top:16px}.settings-links button{width:auto;padding:10px;gap:7px}.settings-links strong{font-size:12px}.settings-links svg{width:17px;height:17px}.settings-links b{display:none}.settings-layout .product-page{height:auto;overflow:visible;padding:24px 18px}}
 
 .settings-links strong{line-height:1.4}.settings-links small{line-height:1.5}.settings-footer{line-height:1.5}
+
+.local-packer-status{display:flex;align-items:center;gap:8px;padding:10px 24px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);flex-shrink:0}.local-packer-status .status-dot{background:#88929c}.local-packer-status .status-dot.online{background:#48ceb5}

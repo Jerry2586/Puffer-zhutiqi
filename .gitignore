@@ -16,3 +16,4 @@ state/
 bootstrap-admin.txt
 admin-credentials.json
 cloud-license.json
+/.codex/

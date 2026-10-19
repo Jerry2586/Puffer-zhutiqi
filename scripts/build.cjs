@@ -30,8 +30,8 @@ async function main(){
  await fs.mkdir(path.join(resource,'theme-service/src/domain'),{recursive:true});
  for(const file of ['default-theme.json','native-targets.json'])await fs.copyFile(path.join(film,'src/domain',file),path.join(resource,'theme-service/src/domain',file));
  const {startLocal}=require('../core/local-service.cjs');
- const smoke=await startLocal({node:process.execPath,frontend,service:path.join(resource,'theme-service'),state:path.join(batch,'smoke-state'),config:{},key:'',localAuthoring:true,logFile:path.join(batch,'service-smoke.log')});
- try{if(!(await fetch(smoke.origin)).ok)throw Error('主题编译页面无法读取');const editable=await fetch(smoke.origin+'/api/admin/state',{headers:{Cookie:'hetun_session='+smoke.cookie}});if(!editable.ok||!(await editable.json()).templates.length)throw Error('无Key本地主题库无法编辑');await fs.writeFile(path.join(batch,'service-smoke.json'),JSON.stringify({ok:true,defaultSkeleton:true,health:true,frontend:true,localAuthoring:true,editable:true}));}finally{await smoke.stop();}
+ const smoke=await startLocal({node:process.execPath,frontend,service:path.join(resource,'theme-service'),state:path.join(batch,'smoke-state'),config:{},key:'',linkDirectory:path.join(batch,'smoke-local-link'),localAuthoring:true,logFile:path.join(batch,'service-smoke.log')});
+ try{if(!(await fetch(smoke.origin)).ok)throw Error('主题编译页面无法读取');const editable=await fetch(smoke.origin+'/api/admin/state',{headers:{Cookie:'hetun_session='+smoke.cookie}});if(!editable.ok||!(await editable.json()).templates.length)throw Error('无Key本地主题库无法编辑');await fs.writeFile(path.join(batch,'service-smoke.json'),JSON.stringify({ok:true,defaultSkeleton:true,health:true,frontend:true,linkDirectory:path.join(root,'test-local-link'),localAuthoring:true,editable:true}));}finally{await smoke.stop();}
  console.log('已验证独立运行资源：主题服务、默认骨架和编译页面。');
  if(process.argv.includes('--frontend-only')){await fs.writeFile(path.join(root,'latest-frontend.json'),JSON.stringify({version:pkg.version,batch,compiler,resource},null,2));console.log(JSON.stringify({version:pkg.version,resource},null,2));return;}
  for(const name of ['main.cjs','preload.cjs','core','renderer','assets','package.json','README.md','ARCHITECTURE.md'])await fs.cp(path.join(source,name),path.join(stage,name),{recursive:true});
@@ -42,7 +42,7 @@ async function main(){
  const artifacts=await build({projectDir:stage,targets:Platform.WINDOWS.createTarget(['dir','portable','nsis'],Arch.x64),config:{
   appId:'com.hetun.theme-center',productName:'河豚主题中心',electronVersion:electronPkg.version,electronDist:path.join(electronDev,'node_modules/electron/dist'),
   directories:{app:stage,output:release,buildResources:path.join(stage,'assets')},asar:true,npmRebuild:false,
-  files:['main.cjs','preload.cjs','core/local-service.cjs','core/offline-network.cjs','core/zip.cjs','core/appearance.cjs','core/windows-shortcuts.cjs','assets/**','package.json','README.md','ARCHITECTURE.md','build-info.json'],
+  files:['main.cjs','preload.cjs','core/local-service.cjs','core/local-link.cjs','core/local-catalog.cjs','core/offline-network.cjs','core/zip.cjs','core/appearance.cjs','core/windows-shortcuts.cjs','assets/**','package.json','README.md','ARCHITECTURE.md','build-info.json'],
   extraResources:[{from:path.join(resource,'frontend'),to:'frontend'},{from:path.join(resource,'theme-service'),to:'theme-service'}],
   win:{icon:path.join(stage,'assets/theme-center.ico'),signAndEditExecutable:true},
   portable:{requestExecutionLevel:'user',artifactName:'Hetun-Theme-Center-'+pkg.version+'-x64.exe'},

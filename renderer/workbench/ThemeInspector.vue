@@ -23,7 +23,7 @@ function move<T>(rows:T[],i:number,delta:number){const target=i+delta;if(target>
 <view class="asset-row"><image v-if="theme.brand.logo" :src="assetUrl(theme.brand.logo)" mode="aspectFit"/><view v-else class="asset-placeholder">LOGO</view><view><button :disabled="busy" @click="emit('upload',theme.brand,'logo')">上传品牌图</button><button v-if="theme.brand.logo" class="subtle" @click="theme.brand.logo=''">移除</button></view></view>
 </Panel>
 <Panel title="界面风格" :initial-open="true" summary="固定结构与页面样式">
-<view class="field"><text>整体风格</text><Choice v-model="theme.pageStyles.design" :options="[{id:'youku',label:'酷影影院'},{id:'classic',label:'简约经典'}]"/></view>
+<view class="field"><text>整体风格</text><text class="fixed-design">简约经典</text></view>
 <view class="field"><text>顶部样式</text><Choice v-model="theme.pageStyles.header" :options="[{id:'search',label:'搜索栏'},{id:'brand',label:'品牌栏'}]"/></view>
 <view class="field"><text>我的页面</text><Choice v-model="theme.pageStyles.mine" :options="[{id:'card',label:'分组卡片'},{id:'minimal',label:'简洁列表'}]"/></view>
 <view class="field"><text>会员页视觉</text><Choice v-model="theme.pageStyles.member" :options="[{id:'gold',label:'香槟金'},{id:'violet',label:'星光紫'}]"/></view>
