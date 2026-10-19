@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs/promises'),path=require('node:path'),http=require('node:http'),net=require('node:net'),{spawn}=require('node:child_process');
-const {queueTheme,readStatus,atomic,linkRoot}=require('./local-link.cjs');
+const {queueTheme,readStatus,atomic,linkRoot,readCapabilities}=require('./local-link.cjs');
 const {createCatalog}=require('./local-catalog.cjs');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.jpg':'image/jpeg','.webp':'image/webp','.woff2':'font/woff2','.ttf':'font/ttf'};
 async function freePort(){const s=net.createServer();await new Promise((ok,no)=>{s.once('error',no);s.listen(0,'127.0.0.1',ok);});const port=s.address().port;await new Promise(ok=>s.close(ok));return port;}
@@ -13,13 +13,17 @@ async function startLocal({node,frontend,service,state,config={},key,logFile,loc
    res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
    const cookie=(req.headers.cookie||'').split(';').map(v=>v.trim()).find(v=>v.startsWith('hetun_session='))?.slice(14);
    if(!localAuthoring||!sessionCookie||cookie!==sessionCookie){res.writeHead(401);return res.end(JSON.stringify({error:'本机会话无效'}));}
-   if(req.method==='GET'){res.writeHead(200);return res.end(JSON.stringify(await readStatus(url.searchParams.get('id'),linkDirectory)));}
+   if(req.method==='GET'){res.writeHead(200);return res.end(JSON.stringify({...await readStatus(url.searchParams.get('id'),linkDirectory),...(!url.searchParams.get('id')?{capabilities:await readCapabilities(linkDirectory)}:{})}));}
    if(req.method!=='POST'){res.writeHead(405);return res.end();}
    if(req.headers.origin!==origin||req.headers['x-hetun-client']!=='studio'||!String(req.headers['content-type']||'').startsWith('application/json')){res.writeHead(403);return res.end(JSON.stringify({error:'本机请求来源无效'}));}
    let body='',size=0;for await(const chunk of req){size+=chunk.length;if(size>4096)throw Error('请求过大');body+=chunk.toString();}const input=JSON.parse(body);
    if(typeof input.template!=='string'||!input.template||input.template.length>100)throw Error('请选择主题');
    const exported=await fetch(api+'/api/admin/export?template='+encodeURIComponent(input.template),{headers:{Cookie:'hetun_session='+sessionCookie},signal:AbortSignal.timeout(10000)});const bundle=await exported.json();if(!exported.ok)throw Error(bundle.error||'主题导出失败');
-   const result=await queueTheme(bundle,linkDirectory);res.writeHead(200);return res.end(JSON.stringify(result));
+   if(input.action&&input.action!=='check')throw Error('本机操作无效');
+   const peer=await readCapabilities(linkDirectory);let report={ready:false,errors:[peer?.error||'请启动打包器并选择基础 APK'],missing:[],renderer:'',contract:'hetun-package-v1'};
+   if(peer?.base){try{const {readZip}=require('./zip.cjs'),{compatibility}=require(path.join(service,'server/package-contract.cjs'));const manifest=JSON.parse(readZip(Buffer.from(bundle.data,'base64')).get('manifest.json'));report=compatibility(peer.base,manifest,peer.app?.device);}catch(e){report={...report,errors:[e.message]};}}
+   if(input.action==='check'){res.writeHead(200);return res.end(JSON.stringify({report,baseDigest:peer?.baseDigest||'',app:peer?.app||null}));}
+   const result={...await queueTheme(bundle,linkDirectory),compatibility:report};res.writeHead(200);return res.end(JSON.stringify(result));
   }
   if(url.pathname.startsWith('/desktop/')){res.writeHead(404,{'Content-Type':'application/json'});return res.end(JSON.stringify({error:'离线主题中心不提供云端功能。',code:'OFFLINE_ONLY'}));}
   if(url.pathname.startsWith('/api/')){

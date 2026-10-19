@@ -1,37 +1,21 @@
 <script setup lang="ts">
-import {computed} from 'vue';
 import type {ClientIntegration,Platform} from '@/domain/types';
-import targets from '@/domain/native-targets.json';
-const props=defineProps<{integration?:ClientIntegration;platform:Platform;busy:boolean;error:string}>();
-const emit=defineEmits<{(e:'change',v:ClientIntegration):void;(e:'close'):void;(e:'save'):void;(e:'export'):void}>();
-const labels:Record<string,string>={'android-phone':'安卓手机 · Kotlin','android-tablet':'安卓平板 · Kotlin','android-tv':'Android TV · Kotlin','ios-iphone':'iPhone · Swift','ios-ipad':'iPad · Swift',web:'网页'};
-const supported=computed(()=>targets[props.platform]);
-function setBase(e:any){emit('change',{version:1,apiBase:String(e.detail?.value??e.target?.value??'')});}
+defineProps<{integration?:ClientIntegration;platform:Platform;busy:boolean;error:string}>();
+const emit=defineEmits<{(e:'close'):void;(e:'export'):void}>();
 </script>
 <template>
 <view class="modal-backdrop" @click.self="!busy&&emit('close')">
- <view class="workbench-modal integration-modal" role="dialog" aria-modal="true" aria-label="多端接入与打包">
-  <view class="modal-heading"><text>多端接入与打包</text><button :disabled="busy" aria-label="关闭多端接入" @click="emit('close')">×</button></view>
-  <text class="modal-description">这套主题的接入配置随草稿保存，并写入导出包的 manifest.json。原生客户端与打包器需实现河豚客户端协议 v1。</text>
-  <view class="integration-targets"><text v-for="target in supported" :key="target">{{labels[target]}}</text></view>
-  <text class="modal-hint">目标端根据当前骨架确定。手机、平板、电视使用各自布局；这里标明适配目标，尚未代表原生客户端已通过验证。</text>
-  <view class="field"><text>正式河豚 API 服务地址</text><input :value="integration?.apiBase||''" :disabled="busy" maxlength="2048" placeholder="https://api.example.com" @input="setBase"/></view>
-  <text class="modal-hint">填写成品 App 使用的运营网关 HTTPS 地址，客户端会在其后追加 /api/catalog 等路径。苹果 CMS 在网关后配置。此处仅保存和导出地址，主题中心不会连接它。</text>
-  <view class="integration-contract">
-   <text>固定协议 · hetun-client-contract v1</text>
-   <text>GET /api/theme?platform={{platform}} · 获取已发布主题</text>
-   <text>GET /api/catalog/categories · 分类</text>
-   <text>GET /api/catalog · 列表、详情与搜索</text>
-   <text>POST /api/playback · 按影片、线路、集数取得播放地址</text>
-  </view>
-  <text class="modal-hint">导出后：打包器读取协议 → 检查底包适配能力 → 注入主题与公开配置 → 编译与签名。安卓生成 APK/AAB；iOS 需 macOS、Xcode 与签名配置生成 IPA。</text>
-  <text class="modal-hint">证书、私钥、密码留在打包器中。普通第三方 APK、未适配的底包不能仅靠导入主题完成换肤。网关登录与播放需要对应 CMS 扩展；支付另行适配。</text>
-  <text v-if="!integration?.apiBase" class="integration-warning">尚未填写正式地址：仍可导出设计主题，打包器应阻止正式出包并要求补全地址。</text>
+ <view class="workbench-modal integration-modal" role="dialog" aria-modal="true" aria-label="主题与打包接口">
+  <view class="modal-heading"><text>主题与打包接口</text><button :disabled="busy" aria-label="关闭" @click="emit('close')">×</button></view>
+  <text class="modal-description">主题中心制作界面、保存素材和导出主题包。后台地址、基础安装包、版本和签名统一在打包器配置。</text>
+  <view class="integration-contract"><text>主题包 · hetun-skeleton v2</text><text>打包协议 · hetun-package-v1</text><text>当前主题平台 · {{platform}}</text><text>基础 APK 必须内含 assets/hetun-base.json，明确声明设备与已实现的主题字段。</text><text>本地自动传递 ZIP，并按基础包声明检查字段与取值；未实现的选项会阻止出包。</text></view>
+  <text class="modal-hint">日常流程：在打包器导入已适配的基础 APK → 选择主题 → 设置后台与版本 → 使用自己的证书签名。基础包源码的首次构建属于独立开发流程。</text>
+  <text class="modal-hint">当前实际二次打包入口支持 Android APK。iOS、Windows 的安装包适配尚未完成；保存这些平台的主题不代表可以生成对应安装包。</text>
   <text v-if="error" class="modal-error">{{error}}</text>
-  <view class="modal-actions"><button :disabled="busy" @click="emit('save')">保存接入配置</button><button class="primary" :disabled="busy" @click="emit('export')">保存并导出主题包</button></view>
+  <view class="modal-actions"><button :disabled="busy" @click="emit('close')">关闭</button><button class="primary" :disabled="busy" @click="emit('export')">导出主题包</button></view>
  </view>
 </view>
 </template>
 <style scoped>
-.integration-modal{width:min(680px,90vw);max-height:85vh;overflow-y:auto}.integration-targets{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.integration-targets text{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px}.integration-contract{display:flex;flex-direction:column;gap:8px;padding:14px;margin:16px 0;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.integration-warning{display:block;margin-top:14px;color:var(--accent);font-size:12px;line-height:1.6}.integration-modal .modal-hint{display:block;line-height:1.7;margin:10px 0}.integration-modal .modal-heading{display:flex;justify-content:space-between;align-items:center;font-size:20px}
+.integration-modal{width:min(680px,90vw);max-height:85vh;overflow-y:auto}.integration-contract{display:flex;flex-direction:column;gap:8px;padding:14px;margin:16px 0;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.integration-modal .modal-hint{display:block;line-height:1.7;margin:10px 0}.integration-modal .modal-heading{display:flex;justify-content:space-between;align-items:center;font-size:20px}
 </style>

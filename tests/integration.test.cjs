@@ -67,10 +67,23 @@ test('无Key本地作者模式实际保存发布导出，并保留会话与来�
  const foreign=await fetch(local.origin+'/api/admin/draft',{method:'PUT',headers:{...headers,Origin:'https://wrong.example'},body:'{}'});assert.equal(foreign.status,403);
  assert.equal((await fetch(local.origin+'/api/admin/state',{headers:{...headers,Origin:'https://wrong.example'}})).status,403);
  const published=await fetch(local.origin+'/api/admin/publish',{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate,version:next.version})});assert.equal(published.status,200);
- const exported=await fetch(local.origin+'/api/admin/export?template='+next.selectedTemplate,{headers});assert.equal(exported.status,200);const bundle=await exported.json();const manifest=JSON.parse(readZip(Buffer.from(bundle.data,'base64')).get('manifest.json'));assert.equal(manifest.theme.brand.name,'本地作者测试');assert.equal(manifest.clientContract.apiBase,'https://api.example.com/gateway');assert.deepEqual(manifest.clientContract.targets,['android-phone','ios-iphone']);
+ const exported=await fetch(local.origin+'/api/admin/export?template='+next.selectedTemplate,{headers});assert.equal(exported.status,200);const bundle=await exported.json();const manifest=JSON.parse(readZip(Buffer.from(bundle.data,'base64')).get('manifest.json'));assert.equal(manifest.theme.brand.name,'本地作者测试');assert.equal(manifest.clientContract.apiBase,'');assert.equal(manifest.theme.integration,undefined);assert.deepEqual(manifest.clientContract.targets,['android-phone','ios-iphone']);
  assert.equal((await fetch(local.origin+'/api/theme?platform=tablet')).status,404);
  assert.equal((await fetch(local.origin+'/api/member/plans',{headers})).status,404);
  assert.equal(await fs.readFile(path.join(stateDir,'cloud-license.json'),'utf8'),previous);
+ const link=path.join(root,'test-local-link'),{atomic}=require('../core/local-link.cjs');
+ const url=local.origin+'/api/admin/local-packer';
+ assert.equal((await fetch(url)).status,401);
+ assert.equal((await fetch(url,{method:'POST',headers:{...headers,Origin:'https://foreign.example'},body:JSON.stringify({template:next.selectedTemplate,action:'check'})})).status,403);
+ let report=await(await fetch(url,{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate,action:'check'})})).json();assert.equal(report.report.ready,false);
+ await atomic(path.join(link,'packer.json'),{protocol:1,updatedAt:new Date().toISOString()});
+ await atomic(path.join(link,'packer-capabilities.json'),{protocol:'hetun-local-capabilities',version:1,updatedAt:new Date().toISOString(),app:{id:'unit-app',name:'应用',device:'mobile',os:'android'},baseDigest:'a'.repeat(64),base:{format:'hetun-base-apk',version:1,contract:'hetun-package-v1',runtime:'hetun-runtime-v1',theme:'hetun-skeleton-v2',assetRoot:'assets/',os:'android',packageName:'com.test.app',devices:['mobile'],renderer:'partial-unit-only',themeFields:['brand.name']},error:''});
+ const linkStatus=await(await fetch(url,{headers})).json();assert.equal(linkStatus.connected,true);assert.equal(linkStatus.capabilities.base.renderer,'partial-unit-only');
+ report=await(await fetch(url,{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate,action:'check'})})).json();assert.equal(report.report.ready,false);assert.ok(report.report.missing.includes('colors.background'));assert.equal(report.baseDigest,'a'.repeat(64));
+ await assert.rejects(fs.readdir(path.join(link,'inbox')),{code:'ENOENT'});
+ const sent=await(await fetch(url,{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate})})).json();assert.equal(sent.status,'queued');assert.equal(sent.compatibility.ready,false);assert.equal((await fs.readdir(path.join(link,'inbox'))).length,1);
+ await atomic(path.join(link,'packer.json'),{protocol:1,updatedAt:new Date(Date.now()-9000).toISOString()});assert.equal((await(await fetch(url,{headers})).json()).capabilities,null);
+
 });
 test('运营中心不接受本地作者标志，仍要求真实云授权',async t=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'hetun-author-boundary-')),apiPort=await port(),origin='http://127.0.0.1:'+apiPort;

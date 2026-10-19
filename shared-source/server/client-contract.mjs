@@ -36,7 +36,7 @@ export function createClientContract(platform,integration){
    Source:{name:'string',episodes:'Episode[]'},Episode:{name:'string',url:'empty string; resolve through playback'}
   },
   errors:{shape:{error:'string'},handling:'Check HTTP status before decoding; handle 401/403/404 and other non-2xx responses.'},
-  build:{input:'native-source-or-supported-base-template',android:'compile resources, align and sign APK/AAB',ios:'macOS + Xcode + provisioning + signing; output IPA',secrets:'keystore, passwords, p12 and provisioning profiles stay in packer secure storage'},
+  build:{input:'contract-compatible-base-apk-and-theme',android:'inject theme/runtime, edit literal manifest, align and sign APK; preserve dex/resources/package identity',ios:'binary repack adapter not implemented',secrets:'keystore, passwords, p12 and provisioning profiles stay in packer secure storage'},
   limitations:['Native renderers must implement hetun-v2 theme fields; theme center does not provide Kotlin/Swift renderers.','Targets describe intended adapters, not certified compatibility with arbitrary APKs.','MacCMS collection API alone cannot provide all login, payment or playback permission features.']
  };
 }

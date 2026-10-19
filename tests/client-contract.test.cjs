@@ -20,7 +20,7 @@ test('各端固定映射到自己的布局，接口参数与实际网关一致',
  assert.equal(createClientContract('mobile').readiness.configured,false);
  for(const platform of ['ios','__proto__','constructor'])assert.throws(()=>createClientContract(platform));
 });
-test('旧 v2 包及新接入配置能素材回导，伪造交接协议不影响再次导出',async t=>{
+test('旧包可回导，但主题导出不携带后台配置与伪造交接协议',async t=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'hetun-contract-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
  const {defaultTheme,validateTheme}=await load('theme.mjs'),{exportTheme}=await load('export-theme.mjs'),{installPackage,readPackage}=await load('packages.mjs');
  const legacy={format:'hetun-skeleton',version:2,renderer:'hetun-v2',id:'legacy-theme',name:'旧主题',platform:'tablet',theme:structuredClone(defaultTheme),clientContract:{targets:['arbitrary-apk'],apiBase:'https://wrong.example'}};
@@ -29,10 +29,10 @@ test('旧 v2 包及新接入配置能素材回导，伪造交接协议不影响�
  old.draft.integration={version:1,apiBase:'https://api.example.com/gateway/'};
  const draft=validateTheme(old.draft);assert.equal(draft.integration.apiBase,'https://api.example.com/gateway');
  const bytes=await exportTheme({...old,draft},dir),manifest=JSON.parse(readPackage(bytes).get('manifest.json'));
- assert.equal(manifest.version,2);assert.equal(manifest.renderer,'hetun-v2');assert.deepEqual(manifest.clientContract.targets,['android-tablet','ios-ipad']);assert.equal(manifest.clientContract.apiBase,draft.integration.apiBase);
+ assert.equal(manifest.version,2);assert.equal(manifest.renderer,'hetun-v2');assert.deepEqual(manifest.clientContract.targets,['android-tablet','ios-ipad']);assert.equal(manifest.clientContract.apiBase,'');assert.equal(manifest.theme.integration,undefined);
  assert.equal(readPackage(bytes).size,1);assert.ok(!bytes.includes(Buffer.from('wrong.example')));
- const again=await installPackage({data:bytes.toString('base64')},dir);assert.deepEqual(again.draft.integration,draft.integration);
- again.draft.integration.version=2;await assert.rejects(exportTheme(again,dir),/版本/);
+ const again=await installPackage({data:bytes.toString('base64')},dir);assert.deepEqual(again.draft.integration,{version:1,apiBase:''});
+ again.draft.integration={version:2,apiBase:'https://secret.example'};const clean=await exportTheme(again,dir);assert.ok(!clean.includes(Buffer.from('secret.example')));
 });
 
 test('导出 OpenAPI 的模型与真实 CMS 转换结果一致，部署前缀独立保留',async t=>{

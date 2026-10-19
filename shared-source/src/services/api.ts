@@ -16,9 +16,12 @@ export function request<T>(endpoint:string,method:'GET'|'POST'|'PUT'='GET',data?
     success:response => { const payload=response.data as any; if(response.statusCode>=200 && response.statusCode<300) resolve(payload); else reject(Object.assign(new Error(payload?.error || '服务连接失败：'+response.statusCode),{status:response.statusCode,code:payload?.code})); },
     fail:() => reject(new Error('无法连接河豚服务，请检查服务地址和网络。'))}));
 }
-export interface LocalPackerReceipt {id:string;status:'queued'|'received'|'rejected';message:string;name?:string;platform?:string;}
+export interface PackagingReport {ready:boolean;errors:string[];missing:string[];renderer:string;contract:string}
+export interface PackerCapabilities {baseDigest:string;error:string;app:{id:string;name:string;device:string;os:string}|null;base:unknown}
+export interface LocalPackerReceipt {id:string;status:'queued'|'received'|'rejected';message:string;name?:string;platform?:string;compatibility?:PackagingReport;}
 export const api={
-  packerConnection:()=>request<{online:boolean;connected:boolean;message:string}>('/api/admin/local-packer'),
+  packerConnection:()=>request<{online:boolean;connected:boolean;message:string;capabilities:PackerCapabilities|null}>('/api/admin/local-packer'),
+  checkPackaging:(template:string)=>request<{report:PackagingReport;baseDigest:string}>('/api/admin/local-packer','POST',{template,action:'check'}),
   sendToPacker:(template:string)=>request<LocalPackerReceipt>('/api/admin/local-packer','POST',{template}),
   packerReceipt:(id:string)=>request<LocalPackerReceipt>('/api/admin/local-packer?id='+encodeURIComponent(id)),
   exportTheme:(template:string)=>request<{name:string;data:string}>('/api/admin/export?template='+encodeURIComponent(template)),
