@@ -56,6 +56,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: theme-center-windows
@@ -66,5 +67,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           cd release
+          node -e 'const m=require("./release-info.json"); if ("v"+m.version!==process.env.GITHUB_REF_NAME || m.revision!==process.env.GITHUB_SHA || m.artifacts.filter(a=>a.name.endsWith(".exe")).length!==2) throw Error("Release version/revision/artifacts mismatch");'
           sha256sum -c SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64 全部离线主题制作软件。打开即用，无需 Key 或登录；移除云端记录、公告同步、自动更新和 CMS 联网预览，阻断远程素材与服务出站连接。保留本机主题、素材导入导出和多端协议 v1，API 地址仅随主题保存导出。更新需手动运行新安装包。原生客户端与打包器仍需实现协议适配，未完成真机联调。附安装包、便携版、SHA256与构建信息。当前未配置 Windows 代码签名，覆盖安装仍需实机验收。"
+          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes-file "$GITHUB_WORKSPACE/RELEASE-NOTES.md"
