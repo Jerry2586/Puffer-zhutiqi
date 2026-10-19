@@ -1,0 +1,769 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "河豚统一客户端 API",
+    "version": "1.0.0",
+    "description": "运营网关的既有 JSON 接口。原生客户端按设备 platform 使用主题。登录接口在本机主题服务中不开放。会员支付、DRM 与任意第三方解析器不在本规范范围内。"
+  },
+  "paths": {
+    "/api/theme": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mobile",
+                "tablet",
+                "tv",
+                "web"
+              ],
+              "default": "mobile"
+            }
+          }
+        ]
+      }
+    },
+    "/api/catalog/categories": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Category"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalog": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "description": "多个影片 ID 以逗号分隔，用于查询详情"
+            }
+          }
+        ]
+      }
+    },
+    "/api/playback": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaybackRequest"
+              }
+            }
+          }
+        },
+        "description": "线路 sid 与集数 nid 从 1 开始。Bearer 可选，CMS 决定权限。需河豚 CMS 播放适配文件。",
+        "security": [
+          {},
+          {
+            "memberBearer": []
+          }
+        ]
+      }
+    },
+    "/api/member/login": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    },
+                    "profile": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "token",
+                    "profile"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅运营网关开放，需 CMS 会员接口。token 当前有效期为 8 小时；401 时重新登录。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                },
+                "required": [
+                  "username",
+                  "password"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/member/logout": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "请求失败；按 HTTP 状态处理，401 表示会话无效，403 表示无权限，404 表示资源或功能不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅运营网关开放。",
+        "security": [
+          {
+            "memberBearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "memberBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Episode": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "const": "",
+            "description": "不在列表中暴露播放地址，通过 /api/playback 获取"
+          }
+        },
+        "required": [
+          "name",
+          "url"
+        ]
+      },
+      "Source": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Episode"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "episodes"
+        ]
+      },
+      "Vod": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "poster": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "year": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "score": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "actors": {
+            "type": "string"
+          },
+          "director": {
+            "type": "string"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "poster",
+          "category",
+          "categoryId",
+          "year",
+          "area",
+          "note",
+          "score",
+          "description",
+          "actors",
+          "director",
+          "sources"
+        ]
+      },
+      "Catalog": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Vod"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pages": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pages",
+          "total"
+        ]
+      },
+      "ThemeResponse": {
+        "type": "object",
+        "properties": {
+          "theme": {
+            "type": "object",
+            "description": "hetun-v2 Theme；与 manifest.theme 使用相同结构",
+            "additionalProperties": true
+          },
+          "version": {
+            "type": "integer"
+          },
+          "template": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "theme",
+          "version",
+          "template",
+          "publishedAt"
+        ]
+      },
+      "PlaybackRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "sid": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "nid": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          }
+        },
+        "required": [
+          "id",
+          "sid",
+          "nid"
+        ]
+      },
+      "PlaybackResponse": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "HTTP(S) 地址；原生端仍须遵守 ATS、TLS、视频格式等平台要求"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "name"
+        ]
+      }
+    }
+  }
+}

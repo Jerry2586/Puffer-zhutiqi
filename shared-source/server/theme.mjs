@@ -1,4 +1,5 @@
 import {readFileSync} from 'node:fs';
+import {validateIntegration} from './client-contract.mjs';
 export const defaultTheme=JSON.parse(readFileSync(new URL('../src/domain/default-theme.json',import.meta.url),'utf8'));
 const text=(v,n,f='')=>typeof v==='string'?v.trim().slice(0,n):f;
 const num=(v,a,b,f)=>Number.isFinite(Number(v))?Math.min(b,Math.max(a,Number(v))):f;
@@ -7,7 +8,7 @@ const pages=['home','category','search','shortdrama','member','mine','ranking','
 const asset=v=>{const s=text(v,2048);if(s&&!/^https?:\/\//i.test(s)&&!/^\/api\/assets\/[a-f0-9]{64}\.(png|jpg|webp|mp4)$/.test(s))throw new Error('素材需使用上传资源或 HTTP(S) 地址。');return s;};
 function ids(list,max,fn){if(!Array.isArray(list)||list.length>max)throw new Error('配置数量超过限制。');const seen=new Set();return list.map(x=>{if(!x||typeof x!=='object')throw new Error('配置条目无效。');const id=text(x.id,64);if(!/^[\w-]+$/.test(id)||seen.has(id))throw new Error('条目编号无效或重复。');seen.add(id);return fn(x,id);});}
 export function validateTheme(input){
- if(!input||![1,2].includes(input.schemaVersion))throw new Error('主题版本不支持。');const t=structuredClone(defaultTheme);
+ if(!input||![1,2].includes(input.schemaVersion))throw new Error('主题版本不支持。');const t=structuredClone(defaultTheme);t.integration=validateIntegration(input.integration);
  t.skeleton.kind=choice(input.skeleton?.kind,['cinema','classic','gallery'],'cinema');
  t.brand={name:text(input.brand?.name,24,t.brand.name),tagline:text(input.brand?.tagline,100),logo:asset(input.brand?.logo)};if(!t.brand.name)throw new Error('品牌名称不能为空。');
  const boot=input.startup||t.startup;if(!/^#[a-f0-9]{6}$/i.test(boot.background||t.startup.background))throw new Error('开机背景色必须为六位十六进制。');t.startup={enabled:boot.enabled!==false,duration:num(boot.duration,1,8,2),image:asset(boot.image),background:boot.background||t.startup.background,showTagline:boot.showTagline!==false};

@@ -67,4 +67,4 @@ jobs:
         run: |
           cd release
           sha256sum -c SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64主题制作软件 v0.2.8。更新弹窗新增真实下载进度、文件大小及左上角关闭按钮；下载并校验安装包后自动退出、安装和重新打开，保留未保存修改提示。关闭弹窗不取消下载或解除强制更新限制。拒绝便携EXE冒充安装包。附安装包、便携版、SHA256与构建信息。自动化验证通过；真实Windows覆盖安装尚需实机验收。当前未配置Windows代码签名。"
+          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64主题制作软件。新增多端接入配置、河豚客户端协议 v1 和内嵌 OpenAPI 3.1；支持为安卓手机、平板、Android TV、iPhone 和 iPad 声明对应主题目标，保留旧 v2 主题包兼容。原生客户端与打包器仍需实现协议适配，本版未完成真机联调。附安装包、便携版、SHA256与构建信息。当前未配置Windows代码签名，覆盖安装仍需实机验收。"

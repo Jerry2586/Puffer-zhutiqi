@@ -1,0 +1,16 @@
+{
+  "mobile": [
+    "android-phone",
+    "ios-iphone"
+  ],
+  "tablet": [
+    "android-tablet",
+    "ios-ipad"
+  ],
+  "tv": [
+    "android-tv"
+  ],
+  "web": [
+    "web"
+  ]
+}
