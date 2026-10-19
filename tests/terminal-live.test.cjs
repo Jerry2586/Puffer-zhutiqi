@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path'),{pathToFileURL}=require('node:url');
 const {Authorization}=require('../core/authorization.cjs'),{ProductCenter}=require('../core/product-center.cjs'),{startLocal}=require('../core/local-service.cjs');
-test('真实终端收到主题导出记录、公告回执与删除Key通知',{skip:!process.env.HETUN_TERMINAL_SOURCE},async t=>{
+test('旧终端模块独立运行，离线主题器不上传导出记录且不受Key撤销影响',{skip:!process.env.HETUN_TERMINAL_SOURCE},async t=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'hetun-real-terminal-'));
  const {createTerminal}=await import(pathToFileURL(path.join(process.env.HETUN_TERMINAL_SOURCE,'server/app.mjs')).href);
  const app=await createTerminal({root:path.join(root,'terminal'),port:0}),origin=await app.listen();let local,auth;
@@ -16,12 +16,12 @@ test('真实终端收到主题导出记录、公告回执与删除Key通知',{sk
  auth=await new Authorization({root:path.join(root,'auth'),product:'theme-center',version:'0.2.4',trust:{url:origin,development:true,publicKey:app.store.publicKey},encrypt:s=>Buffer.from(s),decrypt:b=>b.toString()}).init();await auth.activate(issued.v.key);assert.equal(auth.status().valid,true);
  const center=await new ProductCenter({auth,root:path.join(root,'messages'),version:'0.2.4'}).init();
  const front=path.join(root,'front');await fs.mkdir(front);await fs.writeFile(path.join(front,'index.html'),'local integration');
- local=await startLocal({node:process.execPath,frontend:front,service:path.resolve(__dirname,'../shared-source'),state:path.join(root,'editor'),localAuthoring:true,productCenter:center,authorize:()=>center.assertEditing()});
+ local=await startLocal({node:process.execPath,frontend:front,service:path.resolve(__dirname,'../shared-source'),state:path.join(root,'editor'),localAuthoring:true});
  const headers={Cookie:'hetun_session='+local.cookie,Origin:local.origin,'X-Hetun-Client':'studio'};
  const editor=await(await fetch(local.origin+'/api/admin/state',{headers})).json();assert.ok(editor.selectedTemplate);
  const exported=await fetch(local.origin+'/api/admin/export?template='+editor.selectedTemplate,{headers});assert.equal(exported.status,200);await exported.arrayBuffer();
- for(let i=0;i<40&&!center.state().recordHistory.length;i++)await new Promise(r=>setTimeout(r,25));
- const records=await admin('/api/product-records?product=theme-center');assert.equal(records.r.status,200);assert.ok(JSON.stringify(records.v).includes('theme-export'));assert.equal(center.state().recordHistory[0].type,'theme-export');
+ assert.equal(center.state().recordHistory.length,0);
+ const records=await admin('/api/product-records?product=theme-center');assert.equal(records.r.status,200);assert.equal(JSON.stringify(records.v).includes('theme-export'),false);assert.equal(center.state().recordHistory.length,0);
  const notice=await admin('/api/announcements','POST',{title:'联调公告',content:'真实终端消息',products:['theme-center'],customerIds:[],type:'popup',requireConfirmation:true});assert.equal(notice.r.status,201);
  assert.equal((await admin('/api/announcements/'+notice.v.id,'PATCH',{status:'published'})).r.status,200);
  await center.sync();assert.equal(center.state().items[0].title,'联调公告');await center.ack(notice.v.id,notice.v.revision,'confirmed');assert.ok(app.store.state.deliveryReceipts.some(r=>r.status==='confirmed'));
@@ -29,5 +29,5 @@ test('真实终端收到主题导出记录、公告回执与删除Key通知',{sk
  assert.equal((await admin('/api/licenses/'+auth.data.licenseId,'DELETE')).r.status,200);
  for(let i=0;i<80&&auth.status().valid;i++)await new Promise(r=>setTimeout(r,25));
  assert.equal(auth.status().valid,false);assert.ok(auth.data.denial,'SSE 唤醒后应收到可信签名撤销');
- assert.equal((await fetch(local.origin+'/api/admin/state',{headers})).status,403);
+ assert.equal((await fetch(local.origin+'/api/admin/state',{headers})).status,200);
 });

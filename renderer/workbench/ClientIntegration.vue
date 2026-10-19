@@ -16,7 +16,7 @@ function setBase(e:any){emit('change',{version:1,apiBase:String(e.detail?.value?
   <view class="integration-targets"><text v-for="target in supported" :key="target">{{labels[target]}}</text></view>
   <text class="modal-hint">目标端根据当前骨架确定。手机、平板、电视使用各自布局；这里标明适配目标，尚未代表原生客户端已通过验证。</text>
   <view class="field"><text>正式河豚 API 服务地址</text><input :value="integration?.apiBase||''" :disabled="busy" maxlength="2048" placeholder="https://api.example.com" @input="setBase"/></view>
-  <text class="modal-hint">填写运营网关地址，程序会在其后追加 /api/catalog 等路径。苹果 CMS 在网关后配置；“连接内容”的地址只用于本机预览，不会自动填入这里。正式地址须为 HTTPS。</text>
+  <text class="modal-hint">填写成品 App 使用的运营网关 HTTPS 地址，客户端会在其后追加 /api/catalog 等路径。苹果 CMS 在网关后配置。此处仅保存和导出地址，主题中心不会连接它。</text>
   <view class="integration-contract">
    <text>固定协议 · hetun-client-contract v1</text>
    <text>GET /api/theme?platform={{platform}} · 获取已发布主题</text>

@@ -34,7 +34,7 @@ jobs:
           repository: Jerry2586/Puffer-zhongduan
           ref: 04c3c719f2db48ee0fd7ee62642386816667ce08
           path: .terminal-integration
-      - name: Test actual service and authorization boundaries
+      - name: Test offline editor and operations boundaries
         env:
           HETUN_TERMINAL_SOURCE: ${{ github.workspace }}/.terminal-integration
         run: node --test tests/*.test.cjs
@@ -67,4 +67,4 @@ jobs:
         run: |
           cd release
           sha256sum -c SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64主题制作软件。新增多端接入配置、河豚客户端协议 v1 和内嵌 OpenAPI 3.1；支持为安卓手机、平板、Android TV、iPhone 和 iPad 声明对应主题目标，保留旧 v2 主题包兼容。原生客户端与打包器仍需实现协议适配，本版未完成真机联调。附安装包、便携版、SHA256与构建信息。当前未配置Windows代码签名，覆盖安装仍需实机验收。"
+          gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap SHA256SUMS.txt release-info.json --verify-tag --latest --title "河豚主题中心 $GITHUB_REF_NAME" --notes "Windows x64 全部离线主题制作软件。打开即用，无需 Key 或登录；移除云端记录、公告同步、自动更新和 CMS 联网预览，阻断远程素材与服务出站连接。保留本机主题、素材导入导出和多端协议 v1，API 地址仅随主题保存导出。更新需手动运行新安装包。原生客户端与打包器仍需实现协议适配，未完成真机联调。附安装包、便携版、SHA256与构建信息。当前未配置 Windows 代码签名，覆盖安装仍需实机验收。"

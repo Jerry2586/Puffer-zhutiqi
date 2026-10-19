@@ -28,6 +28,7 @@ function checkUpdate(preview=false){
  if(policy.value.available)dialog.value='update';else emit('status',props.theme.clientSettings.latestVersion?'当前已是最新版本':'暂未发布更新信息，请先填写最新版本号。');
 }
 function openUrl(url:string){
+ if(import.meta.env.VITE_HETUN_THEME_DESKTOP==='1'){actionError.value='离线预览不打开外部链接。';return;}
  if(!/^https?:\/\//i.test(url)){actionError.value='请配置完整的 HTTPS 更新地址。';return;}
  // #ifdef H5
  window.open(url,'_blank','noopener,noreferrer');

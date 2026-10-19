@@ -61,7 +61,7 @@ test('无Key本地作者模式实际保存发布导出，并保留会话与来�
  local=await startLocal({node:process.execPath,frontend,service:film,state:stateDir,config:{},key:'',localAuthoring:true});
  const headers={Cookie:'hetun_session='+local.cookie,Origin:local.origin,'X-Hetun-Client':'studio','Content-Type':'application/json'};
  assert.equal((await fetch(local.origin+'/api/admin/state')).status,401);
- const status=await(await fetch(local.origin+'/api/admin/license',{headers})).json();assert.equal(status.localAuthoring,true);assert.equal(status.products.theme.valid,false);
+ const status=await fetch(local.origin+'/api/admin/license',{headers});assert.equal(status.status,404);assert.equal((await status.json()).code,'OFFLINE_ONLY');
  const first=await fetch(local.origin+'/api/admin/state',{headers});assert.equal(first.status,200);const state=await first.json();assert.ok(state.templates.length);assert.ok(state.templates.every(v=>v.platform==='mobile'));
  state.draft.brand.name='本地作者测试';state.draft.integration={version:1,apiBase:'https://api.example.com/gateway'};const saved=await fetch(local.origin+'/api/admin/draft',{method:'PUT',headers,body:JSON.stringify({template:state.selectedTemplate,version:state.version,theme:state.draft})});assert.equal(saved.status,200);const next=await saved.json();assert.equal(next.draft.brand.name,'本地作者测试');assert.equal(next.draft.integration.apiBase,'https://api.example.com/gateway');
  const foreign=await fetch(local.origin+'/api/admin/draft',{method:'PUT',headers:{...headers,Origin:'https://wrong.example'},body:'{}'});assert.equal(foreign.status,403);
