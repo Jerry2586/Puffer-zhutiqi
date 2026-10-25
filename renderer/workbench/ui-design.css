@@ -1,0 +1,152 @@
+/* UI design workspace. App renderer and library styles remain independent. */
+.workbench .ui-design{grid-template-columns:202px minmax(360px,1fr) minmax(390px,42%);background:var(--bg)}
+.workbench .ui-design .ui-pages{background:var(--panel);border-right:1px solid var(--line-strong)}
+.workbench .ui-pages-heading{padding:25px 19px 16px;display:flex;flex-direction:column;gap:7px}
+.workbench .ui-kicker{display:block;font-size:9px;letter-spacing:1.8px;font-weight:650;color:var(--muted)}
+.workbench .ui-pages-title{font-size:20px;font-weight:650;letter-spacing:-.5px}
+.workbench .ui-pages-caption{font-size:10px;color:var(--muted);line-height:1.8}
+.workbench .ui-page-search{margin:0 13px 10px;display:flex;align-items:center;background:var(--input);border:1px solid var(--line-strong);border-radius:8px;padding:0 10px;gap:5px;color:var(--muted)}
+.workbench .ui-page-search uni-input{min-width:0;flex:1;height:34px;font-size:11px;border:0;background:transparent;padding:0}
+.workbench .ui-page-search>uni-text{font-size:21px}
+.workbench .ui-design .structure-scroll{padding:0 11px 18px}
+.workbench .ui-design .tree-heading{font-size:10px;margin:20px 8px 9px;letter-spacing:.5px}
+.workbench .ui-design .page-node{min-height:38px;margin:3px 0;padding:9px 11px;border-radius:7px;font-size:12px;gap:9px;border:1px solid transparent}
+.workbench .ui-design .page-node.active{background:color-mix(in srgb,var(--accent) 9%,var(--panel));border-color:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent)}
+.workbench .ui-design .page-icon{font-size:15px;opacity:.65}
+.workbench .ui-global-entry{display:flex;align-items:center;gap:10px;margin:12px 13px 0;padding:12px;border-radius:10px;background:var(--surface);border:1px solid var(--line-strong);text-align:left;flex:none}
+.workbench .ui-global-entry>uni-text:first-child{font-size:22px;color:var(--accent)}
+.workbench .ui-global-entry>uni-view{flex:1;display:flex;flex-direction:column;gap:4px}
+.workbench .ui-global-entry>uni-view>uni-text:first-child{font-size:12px;font-weight:600}
+.workbench .ui-global-entry>uni-view>uni-text:last-child{font-size:9px;color:var(--muted)}
+.workbench .ui-global-entry.active{border-color:var(--accent)}
+.workbench .ui-design .structure-foot{font-size:9px;justify-content:center;padding:17px 5px}
+.workbench .ui-design-sheet{border-left:0;border-right:1px solid var(--line-strong);background:var(--panel);min-width:0}
+.workbench .ui-sheet-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:25px 25px 18px;flex:none}
+.workbench .ui-sheet-title{font-size:24px;display:block;font-weight:650;letter-spacing:-.6px;margin-top:7px;line-height:1.4}
+.workbench .ui-live-tag{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.workbench .ui-live-tag .status-dot{width:5px;height:5px}
+.workbench .ui-design-tabs{display:flex;gap:24px;padding:0 25px;border-bottom:1px solid var(--line-strong);flex:none}
+.workbench .ui-design-tabs uni-button{border:0;border-radius:0;min-height:42px;padding:8px 0;background:transparent;color:var(--muted);font-size:12px;position:relative}
+.workbench .ui-design-tabs uni-button.active{color:var(--text);font-weight:600}
+.workbench .ui-design-tabs uni-button.active:before{content:'';height:2px;position:absolute;bottom:0;left:0;right:0;background:var(--accent)}
+.workbench .ui-context-tools{display:flex;flex-wrap:wrap;gap:6px;padding:16px 23px 8px;flex:none;max-height:124px;overflow:auto}
+.workbench .ui-context-tools uni-button{margin:0;padding:6px 10px;min-height:29px;font-size:10px;background:transparent;color:var(--muted);border:1px solid var(--line-strong);border-radius:6px}
+.workbench .ui-context-tools uni-button.active{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 25%,transparent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.workbench .ui-design-sheet>.property-heading{display:none}
+.workbench .ui-design-sheet>.property-body{padding:16px 23px 36px;scrollbar-gutter:stable}
+.workbench .ui-design-sheet .scope-switch{border:0;border-radius:7px;background:var(--surface);padding:3px}
+.workbench .ui-design-sheet .scope-switch uni-button{font-size:11px;min-height:30px!important}
+.workbench .ui-design-sheet .scope-switch uni-button.active{background:var(--panel);box-shadow:0 1px 4px #00000012;color:var(--text)}
+.workbench .ui-design-sheet .scope-note{padding:9px 0 18px;font-size:10px;line-height:1.8}
+.workbench .ui-design-sheet .editor-panel{padding:18px;border:1px solid var(--line-strong);border-radius:10px;margin-bottom:16px;background:var(--panel);box-shadow:0 2px 4px #00000003}
+.workbench .ui-design-sheet .panel-title{font-size:13px;font-weight:650}
+.workbench .ui-design-sheet .panel-summary{font-size:10px;line-height:1.7;margin-top:5px}
+.workbench .ui-design-sheet .panel-toggle{background:transparent;color:var(--muted);border:0;font-size:10px;padding:3px 0 3px 8px}
+.workbench .ui-design-sheet .panel-body{padding-top:20px}
+.workbench .ui-design-sheet .field{gap:9px;margin-bottom:20px}
+.workbench .ui-design-sheet .field:last-child{margin-bottom:0}
+.workbench .ui-design-sheet .field>uni-text,.workbench .ui-design-sheet .field-heading{font-size:11px;color:var(--muted)}
+.workbench .ui-design-sheet .property-note{background:var(--surface);border-radius:8px;font-size:10px;padding:13px 15px;margin:0 0 16px;line-height:1.9}
+.workbench .ui-component-list{display:flex;gap:6px;flex-wrap:wrap;padding:15px 23px 8px;max-height:155px;overflow:auto;flex:none}
+.workbench .ui-component-list>uni-button,.workbench .ui-component-item{background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;min-height:30px;font-size:10px;margin:0}
+.workbench .ui-component-item{display:flex;align-items:center;padding:0 3px}
+.workbench .ui-component-item uni-button{background:transparent;border:0;font-size:10px;min-height:29px;padding:4px 5px}
+.workbench .ui-component-list .active{border-color:var(--accent);color:var(--accent)}
+.workbench .ui-design .canvas-panel{background:var(--bg)}
+.workbench .ui-design .canvas-toolbar{height:auto;min-height:105px;flex-wrap:wrap;align-content:center;gap:12px;padding:17px 20px;background:var(--panel)}
+.workbench .ui-design .canvas-location{display:flex;align-items:center;gap:10px;width:100%}
+.workbench .ui-preview-label{font-size:12px;font-weight:650;color:var(--text)}
+.workbench .ui-design .canvas-location>uni-text:nth-child(2){font-size:10px;color:var(--muted)}
+.workbench .ui-design .canvas-size{margin-left:auto;font-size:10px;font-variant-numeric:tabular-nums}
+.workbench .ui-design .canvas-tools{width:100%;gap:8px;flex-wrap:wrap;justify-content:flex-start}
+.workbench .ui-design .canvas-tools .mode-segment{margin-right:auto}
+.workbench .ui-design .canvas-tools .mode-segment uni-button{font-size:10px;padding:6px 9px;min-height:28px}
+.workbench .ui-design .canvas-tools select{font-size:10px}
+.workbench .ui-design .canvas-area{padding:24px 28px;background-size:16px 16px}
+.workbench .ui-design .canvas-screen.mobile{box-shadow:0 20px 60px #00000030,0 0 0 1px #ffffff0d}
+.workbench .ui-design .canvas-status{padding:11px 16px;font-size:9px;gap:14px;line-height:1.6;background:var(--panel);border-top:1px solid var(--line)}
+.workbench.light .ui-design .canvas-area{background-color:#e9edf2;background-image:radial-gradient(#afb9c94d .7px,transparent .7px)}
+.workbench.light .ui-design-sheet .editor-panel{box-shadow:0 2px 6px #172a4a04}
+.workbench.fullscreen .ui-design{grid-template-columns:minmax(0,1fr)}
+.workbench.fullscreen .ui-design .canvas-toolbar{min-height:65px;flex-wrap:nowrap}
+.workbench.fullscreen .ui-design .canvas-location{width:auto;min-width:220px}
+.workbench.fullscreen .ui-design .canvas-tools{width:auto;margin-left:auto}
+@media(min-width:1650px){.workbench .ui-design{grid-template-columns:228px minmax(460px,1fr) minmax(460px,43%)}.workbench .ui-design-sheet .editor-panel{padding:22px}.workbench .ui-design-sheet>.property-body{padding:20px 30px 40px}}
+@media(max-width:1150px){.workbench .ui-design{grid-template-columns:170px minmax(310px,1fr) minmax(330px,38%)}.workbench .ui-sheet-heading{padding:20px 17px 14px}.workbench .ui-design-tabs{padding:0 17px;gap:19px}.workbench .ui-context-tools,.workbench .ui-component-list{padding:13px 15px 6px}.workbench .ui-design-sheet>.property-body{padding:15px}.workbench .ui-design .canvas-toolbar{padding:15px 12px}.workbench .ui-design .canvas-tools{gap:3px}.workbench .ui-pages-heading{padding:22px 14px 15px}}
+
+.workbench .theme-entry-list{display:flex;flex-direction:column;gap:7px;padding:4px 10px}
+.workbench .theme-tool-node{display:flex;align-items:center;gap:10px;width:100%;min-height:66px;padding:12px 10px;margin:0;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left;color:var(--text);line-height:1.5}
+.workbench .theme-tool-node:hover{background:var(--input)}
+.workbench .theme-tool-node.active{background:#8171ed14;border-color:#8171ed44}
+.workbench .theme-tool-node>uni-view{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.workbench .theme-tool-node>uni-view>uni-text:first-child{font-size:13px;font-weight:600}
+.workbench .theme-tool-node>uni-view>uni-text:last-child{font-size:10px;color:var(--muted)}
+.workbench .theme-tool-mark{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:7px;background:#8171ed14;color:#9280ef;font-size:17px}
+.workbench .back-to-theme{margin:4px 12px 14px;padding:9px;background:var(--input);font-size:11px;color:var(--text);border:1px solid var(--line-strong);border-radius:8px}
+.workbench .nav-icon-editors{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.workbench .nav-icon-editor{display:flex;flex-direction:column;align-items:stretch;gap:8px;font-size:12px}
+.workbench .nav-icon-preview{height:72px;display:flex;align-items:center;justify-content:center;background:var(--input);border:1px solid var(--line-strong);border-radius:10px}
+.workbench .nav-icon-preview uni-image{width:32px;height:32px}
+.workbench .theme-tool-node:focus-visible,.workbench .back-to-theme:focus-visible{outline:2px solid #9280ef;outline-offset:2px}
+
+/* Keep names readable in compact desktop windows and the page below the preview label. */
+.workbench .theme-tool-node{gap:8px;padding:10px 8px;min-height:63px}
+.workbench .theme-tool-node>uni-view>uni-text:first-child{white-space:nowrap;font-size:12px}
+.workbench .theme-tool-node>uni-view>uni-text:last-child{font-size:10px;line-height:1.6}
+.workbench .theme-tool-mark{width:22px;height:26px;font-size:15px}
+.workbench .ui-design .canvas-location{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px}
+.workbench .ui-design .canvas-location>uni-text:nth-child(2){grid-column:1;grid-row:2}
+.workbench .ui-design .canvas-location>.canvas-size{grid-column:2;grid-row:1 / 3}
+@media(max-width:1000px){.workbench .ui-design{grid-template-columns:170px minmax(280px,1fr) minmax(285px,36%)}.workbench .editor-command{gap:8px;flex-wrap:wrap}.workbench .editor-actions{flex-wrap:wrap}.workbench .editor-actions uni-button{white-space:nowrap}.workbench .ui-sheet-title{font-size:21px}}
+
+.workbench .ui-main-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:15px 17px;border-bottom:1px solid var(--line);flex:none}
+.workbench .ui-main-tools uni-button{margin:0;padding:10px 5px;font-size:11px;line-height:1.5;border:1px solid var(--line);border-radius:7px;background:var(--input);color:var(--muted);white-space:nowrap}
+.workbench .ui-main-tools uni-button.active{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+
+
+/* The skeleton tree can be minimized so the design canvas gets more room. */
+.workbench .ui-design.skeleton-collapsed{grid-template-columns:52px minmax(360px,1fr) minmax(390px,42%)}
+.workbench .ui-pages.collapsed{width:52px;min-width:52px;align-items:center}
+.workbench .ui-pages .skeleton-collapse{display:flex;align-items:center;justify-content:center;flex:none;width:34px;min-height:34px;margin:14px 9px 4px;padding:0;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--text);font-size:22px;line-height:1}
+.workbench .ui-pages .skeleton-collapse:hover{border-color:var(--accent);color:var(--accent)}
+.workbench .ui-pages .skeleton-collapse-label{writing-mode:vertical-rl;font-size:9px;letter-spacing:1px;margin-top:5px;color:var(--muted)}
+.workbench .ui-pages.collapsed .skeleton-collapse{width:34px;min-height:80px;flex-direction:column;gap:2px}
+.workbench .ui-pages.collapsed .ui-pages-heading,.workbench .ui-pages.collapsed .ui-page-search,.workbench .ui-pages.collapsed .structure-scroll,.workbench .ui-pages.collapsed .structure-foot{display:none}
+@media(min-width:1650px){.workbench .ui-design.skeleton-collapsed{grid-template-columns:52px minmax(460px,1fr) minmax(460px,43%)}}
+@media(max-width:1150px){.workbench .ui-design.skeleton-collapsed{grid-template-columns:52px minmax(310px,1fr) minmax(330px,38%)}}
+
+/* Single-page adjustments share one scroll container and follow the page order. */
+.workbench .ui-design-scope{display:flex;align-items:baseline;gap:10px;padding:12px 23px;border-bottom:1px solid var(--line-strong);flex:none}
+.workbench .ui-design-scope-label{font-size:13px;font-weight:600;color:var(--text)}
+.workbench .ui-design-scope-caption{font-size:10px;color:var(--muted)}
+.workbench .ui-page-adjustments{min-height:0;flex:1;overflow:auto}
+.workbench .ui-page-adjustments .ui-component-list{max-height:none;overflow:visible}
+.workbench .ui-page-adjustments .property-body{overflow:visible;flex:none}
+.workbench .component-step{font-variant-numeric:tabular-nums;color:var(--muted);font-size:10px;margin-right:3px}
+
+/* Page composer: the controls live inside their corresponding page regions. */
+.workbench .page-composer{padding:20px 22px 32px}
+.workbench .page-composer-intro{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+.workbench .page-composer-intro>uni-text:first-child{font-size:15px;font-weight:600}
+.workbench .page-composer-intro>uni-text:last-child{font-size:11px;color:var(--muted);line-height:1.7}
+.workbench .page-region{border:1px solid var(--line-strong);border-radius:10px;margin-bottom:12px;background:var(--panel);overflow:hidden}
+.workbench .page-region.expanded{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.workbench .page-region-header{display:flex;align-items:center}
+.workbench .page-region-toggle{margin:0;display:flex;align-items:center;gap:12px;padding:17px 15px;width:100%;min-width:0;text-align:left;border:0;border-radius:0;background:transparent;color:var(--text);line-height:1.5}
+.workbench .page-region-toggle::after{border:0}
+.workbench .page-region-toggle>uni-view{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.workbench .page-region-toggle>uni-text:last-child{font-size:11px;flex:none;color:var(--accent)}
+.workbench .page-region-name{font-size:14px;font-weight:600}
+.workbench .page-region-hint{font-size:10px;color:var(--muted)}
+.workbench .page-region-number{font-size:12px;font-variant-numeric:tabular-nums;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);padding:7px;border-radius:6px}
+.workbench .page-region-order{display:flex;padding-right:10px;gap:3px}
+.workbench .page-region-order uni-button{margin:0;padding:5px 8px;font-size:13px;background:var(--input);color:var(--muted);border:0;min-height:30px}
+.workbench .page-region-body{padding:4px 16px 16px;border-top:1px solid var(--line)}
+.workbench .page-region-body .inline-properties{padding:0!important}
+.workbench .page-region-body .editor-panel{padding:14px 0;margin:0;border:0;border-radius:0;background:transparent;border-bottom:1px solid var(--line)}
+.workbench .page-region-body .editor-panel:last-child{border-bottom:0}
+.workbench .page-region-body .panel-toggle{display:none}
+.workbench .page-region-body .panel-body{display:block!important}
+.workbench .page-region-body .panel-summary{display:none}
+.workbench .page-region-body .panel-title{font-size:12px;color:var(--muted)}
+.workbench .page-add-region{width:100%;margin:4px 0 20px;padding:14px;border:1px dashed var(--line-strong);border-radius:8px;background:var(--input);color:var(--accent);font-size:12px}

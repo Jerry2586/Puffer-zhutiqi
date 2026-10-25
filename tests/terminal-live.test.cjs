@@ -1,9 +1,10 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path'),{pathToFileURL}=require('node:url');
 const {Authorization}=require('../core/authorization.cjs'),{ProductCenter}=require('../core/product-center.cjs'),{startLocal}=require('../core/local-service.cjs');
-test('旧终端模块独立运行，离线主题器不上传导出记录且不受Key撤销影响',{skip:!process.env.HETUN_TERMINAL_SOURCE},async t=>{
+const terminalSource=process.env.HETUN_TERMINAL_SOURCE||path.join(__dirname,'fixtures/terminal-server');
+test('旧终端模块独立运行，离线主题器不上传导出记录且不受Key撤销影响',async t=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'hetun-real-terminal-'));
- const {createTerminal}=await import(pathToFileURL(path.join(process.env.HETUN_TERMINAL_SOURCE,'server/app.mjs')).href);
+ const {createTerminal}=await import(pathToFileURL(path.join(terminalSource,'server/app.mjs')).href);
  const app=await createTerminal({root:path.join(root,'terminal'),port:0}),origin=await app.listen();let local,auth;
  t.after(async()=>{auth?.stop();await local?.stop();await app.close();await fs.rm(root,{recursive:true,force:true});});
  let cookie='',csrf='';

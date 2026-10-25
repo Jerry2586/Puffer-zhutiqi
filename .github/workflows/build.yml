@@ -28,15 +28,7 @@ jobs:
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag and package version differ' }
       - name: Install dependencies outside source
         run: node scripts/setup.cjs
-      - name: Checkout matching terminal integration fixture
-        uses: actions/checkout@v4
-        with:
-          repository: Jerry2586/Puffer-zhongduan
-          ref: 04c3c719f2db48ee0fd7ee62642386816667ce08
-          path: .terminal-integration
-      - name: Test offline editor and operations boundaries
-        env:
-          HETUN_TERMINAL_SOURCE: ${{ github.workspace }}/.terminal-integration
+      - name: Test offline editor and operations boundaries using pinned local fixture
         run: node --test tests/*.test.cjs
       - name: Type check, compile and build Windows programs
         run: node scripts/build.cjs

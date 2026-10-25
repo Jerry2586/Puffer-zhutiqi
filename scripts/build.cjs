@@ -28,7 +28,7 @@ async function main(){
  for(const file of await fs.readdir(frontend,{recursive:true})){if(!file.endsWith('.css'))continue;const location=path.join(frontend,file),css=await fs.readFile(location,'utf8');await fs.writeFile(location,css.replace(/url\(\s*(['"]?)(?:https?:)?\/\/[^'")\s]+\1\s*\)/gi,'none'));}
  await fs.cp(path.join(film,'server'),path.join(resource,'theme-service/server'),{recursive:true});
  await fs.mkdir(path.join(resource,'theme-service/src/domain'),{recursive:true});
- for(const file of ['default-theme.json','native-targets.json'])await fs.copyFile(path.join(film,'src/domain',file),path.join(resource,'theme-service/src/domain',file));
+ for(const file of ['default-theme.json','native-targets.json','visual-schema.json'])await fs.copyFile(path.join(film,'src/domain',file),path.join(resource,'theme-service/src/domain',file));
  const {startLocal}=require('../core/local-service.cjs');
  const smoke=await startLocal({node:process.execPath,frontend,service:path.join(resource,'theme-service'),state:path.join(batch,'smoke-state'),config:{},key:'',linkDirectory:path.join(batch,'smoke-local-link'),localAuthoring:true,logFile:path.join(batch,'service-smoke.log')});
  try{if(!(await fetch(smoke.origin)).ok)throw Error('主题编译页面无法读取');const editable=await fetch(smoke.origin+'/api/admin/state',{headers:{Cookie:'hetun_session='+smoke.cookie}});if(!editable.ok||!(await editable.json()).templates.length)throw Error('无Key本地主题库无法编辑');await fs.writeFile(path.join(batch,'service-smoke.json'),JSON.stringify({ok:true,defaultSkeleton:true,health:true,frontend:true,linkDirectory:path.join(root,'test-local-link'),localAuthoring:true,editable:true}));}finally{await smoke.stop();}

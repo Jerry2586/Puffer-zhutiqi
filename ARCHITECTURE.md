@@ -1,6 +1,6 @@
 # 河豚主题中心架构
 
-当前版本0.3.0。桌面壳采用Electron，主进程加载内置H5前端并启动独立本机主题服务。前端采用Vue/uni-app，共用客户端的主题协议和实际预览渲染器。
+当前版本0.4.0。桌面壳采用Electron，主进程加载内置H5前端并启动独立本机主题服务。前端采用Vue/uni-app，共用客户端的主题协议和实际预览渲染器。
 
 ## 源码与构建边界
 
@@ -22,7 +22,7 @@
 
 ## 本机服务与离线边界
 
-桌面和开发预览统一以 localAuthoring 启动。主进程启动 loopback 静态服务/API，随机本机管理员会话通过 HttpOnly cookie 交给页面。sandbox、contextIsolation、Host 和 Origin 校验保留。只有 theme-center、127.0.0.1 监听及本机 Origin 同时成立时允许本地作者模式；独立运营服务的授权边界保持不变。
+桌面和开发预览统一以 localAuthoring 启动。主进程启动 loopback 静态服务/API，随机本机管理员会话通过 HttpOnly cookie 交给页面。sandbox、contextIsolation、Host 和 Origin 校验保留。只有 theme-center、127.0.0.1 监听及本机 Origin 同时成立时允许本地作者模式；运营服务独立管理管理员会话与会员业务权限，当前自部署模式无需云Key。
 
 离线模式不初始化许可模块、不读取旧 cloud-license.json。接口白名单只保留本机主题编辑、素材、导入导出、发布和健康检查；CMS、目录、播放、会员和桌面云端接口返回 OFFLINE_ONLY。主题服务子进程通过 offline-network.cjs 在加载业务代码前阻断出站 fetch、HTTP(S) 和 socket。页面 CSP 限制同源连接、本机图片和视频，禁止网页嵌入；Electron 再拦截非当前本机源的请求并禁止弹出外部窗口。
 

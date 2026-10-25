@@ -22,3 +22,23 @@ test('离线子进程在fetch、HTTP和socket层阻断出站连接',async()=>{
  const guard=path.resolve('core/offline-network.cjs');const script= "const assert=require('node:assert/strict');(async()=>{await assert.rejects(fetch('https://example.com'),{code:'OFFLINE_ONLY'});assert.throws(()=>require('node:http').get('http://127.0.0.1:1'),{code:'OFFLINE_ONLY'});assert.throws(()=>require('node:net').connect(1,'127.0.0.1'),{code:'OFFLINE_ONLY'});const http=await import('node:http');assert.throws(()=>http.get('http://127.0.0.1:1'),{code:'OFFLINE_ONLY'});})().catch(e=>{console.error(e);process.exitCode=1;});";
  const child=spawn(process.execPath,['--require',guard,'-e',script],{windowsHide:true,stdio:['ignore','pipe','pipe']});let output='';child.stderr.on('data',v=>output+=v);const code=await new Promise((ok,no)=>{child.once('error',no);child.once('exit',ok);});assert.equal(code,0,output);
 });
+test('两个本地预览共享浏览器Cookie时仍可独立使用，无需手动登录',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'hetun-preview-sessions-'));const locals=[];
+ t.after(async()=>{await Promise.all(locals.map(local=>local.stop()));await fs.rm(root,{recursive:true,force:true});});
+ const frontend=path.join(root,'front');await fs.mkdir(frontend);await fs.writeFile(path.join(frontend,'index.html'),'<html>preview</html>');
+ const jar=new Map();
+ for(let i=0;i<2;i++){
+  const local=await startLocal({node:process.execPath,frontend,service:path.resolve('shared-source'),state:path.join(root,'state'+i),linkDirectory:path.join(root,'link'+i),localAuthoring:true,browserPreview:true});locals.push(local);
+  const page=await fetch(local.origin);const cookie=page.headers.get('set-cookie').split(';')[0];const separator=cookie.indexOf('=');jar.set(cookie.slice(0,separator),cookie.slice(separator+1));
+ }
+ assert.equal(jar.size,2,'不同端口的预览必须使用不同Cookie名称');
+ // Include an unrelated old preview cookie, including a more-specific /api cookie.
+ const cookie='hetun_session=stale-api-session; '+[...jar].map(([name,value])=>name+'='+value).join('; ')+'; hetun_session=stale-root-session';
+ for(const local of locals){
+  for(const route of ['/api/admin/state','/api/admin/local-packer']){
+   const response=await fetch(local.origin+route,{headers:{Cookie:cookie}});assert.equal(response.status,200,route);
+  }
+  assert.equal((await fetch(local.origin+'/api/admin/state')).status,401,'未建立本机会话的请求仍需拒绝');
+  assert.equal((await fetch(local.origin+'/api/admin/state',{headers:{Cookie:cookie,Origin:'https://foreign.example'}})).status,403);
+ }
+});

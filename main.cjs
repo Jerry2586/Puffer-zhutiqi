@@ -18,7 +18,7 @@ async function boot(){
  if(!resource)throw Error('缺少主题软件运行资源，请先完成本地前端构建。');
  if(local){await local.stop();local=null;}
  local=await startLocal({node:process.execPath,frontend:path.join(resource,'frontend'),service:path.join(resource,'theme-service'),state:path.join(root,'theme-service'),config:{},key:'',localAuthoring:true,logFile:path.join(root,'logs/service.log')});
- await win.webContents.session.cookies.set({url:local.origin,name:'hetun_session',value:local.cookie,path:'/',httpOnly:true,sameSite:'strict',secure:false});
+ await win.webContents.session.cookies.set({url:local.origin,name:local.cookieName,value:local.cookie,path:'/',httpOnly:true,sameSite:'strict',secure:false});
  await win.loadURL(local.origin+'/#/pages/studio/index');win.show();
  await diagnostic({phase:'ready',origin:local.origin,api:local.api,servicePid:local.child.pid,windowVisible:win.isVisible(),title:win.getTitle()});
 }

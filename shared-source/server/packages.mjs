@@ -2,9 +2,10 @@ import {inflateRawSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
 import {promises as fs} from 'node:fs';
 import path from 'node:path';
+import {isStaticSvg} from './svg.mjs';
 import {validateTheme} from './theme.mjs';
 const fail=msg=>{throw new Error(msg);};
-const safeName=n=>/^(manifest\.json|assets\/[a-zA-Z0-9_-]+\.(png|jpg|webp|mp4))$/.test(n);
+const safeName=n=>/^(manifest\.json|assets\/[a-zA-Z0-9_-]+\.(png|jpg|webp|svg|mp4))$/.test(n);
 function crc32(b){let c=0xffffffff;for(const x of b){c^=x;for(let i=0;i<8;i++)c=(c>>>1)^((c&1)?0xedb88320:0);}return (c^0xffffffff)>>>0;}
 export function readPackage(buffer){
  if(buffer.length>12*1024*1024)fail('模板包最多 12 MB。');
@@ -17,7 +18,7 @@ export function readPackage(buffer){
  total+=plain;if(total>16*1024*1024)fail('解压后模板包过大。');if(local+30>buffer.length||buffer.readUInt32LE(local)!==0x04034b50)fail('ZIP 文件头损坏。');const ln=buffer.readUInt16LE(local+26),le=buffer.readUInt16LE(local+28);if(buffer.subarray(local+30,local+30+ln).toString('utf8')!==n)fail('ZIP 路径不一致。');const begin=local+30+ln+le;if(begin+size>offset)fail('ZIP 文件越界。');const bytes=buffer.subarray(begin,begin+size),out=method===8?inflateRawSync(bytes,{maxOutputLength:10*1024*1024}):bytes;if(out.length!==plain||crc32(out)!==crc)fail('ZIP 校验失败。');files.set(n,out);
  }return files;
 }
-export async function storeAsset(bytes,name,dir){if(!bytes.length||bytes.length>10*1024*1024)fail('素材最多 10 MB。');const ext=path.extname(name).slice(1).toLowerCase();let valid=false;if(ext==='png')valid=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));if(ext==='jpg')valid=bytes[0]===255&&bytes[1]===216&&bytes[2]===255;if(ext==='webp')valid=bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP';if(ext==='mp4')valid=bytes.toString('ascii',4,8)==='ftyp';if(!valid)fail('素材内容与扩展名不符，仅支持 PNG/JPG/WebP/MP4。');const file=createHash('sha256').update(bytes).digest('hex')+'.'+ext;await fs.mkdir(dir,{recursive:true});await fs.writeFile(path.join(dir,file),bytes,{flag:'wx'}).catch(e=>{if(e.code!=='EEXIST')throw e;});return '/api/assets/'+file;}
+export async function storeAsset(bytes,name,dir){if(!bytes.length||bytes.length>10*1024*1024)fail('素材最多 10 MB。');const rawExt=path.extname(name).slice(1).toLowerCase();const ext=rawExt==='jpeg'?'jpg':rawExt;let valid=false;if(ext==='svg')valid=isStaticSvg(bytes);if(ext==='png')valid=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));if(ext==='jpg')valid=bytes[0]===255&&bytes[1]===216&&bytes[2]===255;if(ext==='webp')valid=bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP';if(ext==='mp4')valid=bytes.toString('ascii',4,8)==='ftyp';if(!valid)fail('素材内容与扩展名不符，支持 PNG/JPG/WebP/MP4 及静态 SVG 图形（不支持脚本、样式表和外部引用）。');const file=createHash('sha256').update(bytes).digest('hex')+'.'+ext;await fs.mkdir(dir,{recursive:true});await fs.writeFile(path.join(dir,file),bytes,{flag:'wx'}).catch(e=>{if(e.code!=='EEXIST')throw e;});return '/api/assets/'+file;}
 export async function installPackage(input,assetDir,authorize=async()=>{}){const files=readPackage(Buffer.from(String(input.data||''),'base64'));if(!files.has('manifest.json'))fail('包中缺少 manifest.json。');let manifest;try{manifest=JSON.parse(files.get('manifest.json').toString('utf8'));}catch{fail('manifest.json 无效。');}
  if(manifest.format!=='hetun-skeleton'||manifest.version!==2||manifest.renderer!=='hetun-v2'||!['mobile','tablet','tv','web'].includes(manifest.platform)||!manifest.theme)fail('骨架包格式、版本或渲染器不兼容。');if(!/^[a-z0-9][a-z0-9-]{2,60}$/.test(manifest.id||''))fail('骨架 ID 无效。');
  await authorize(manifest.id);

@@ -1,0 +1,3 @@
+# Legacy terminal integration fixture
+
+Exact server source recovered from the locally retained Puffer-zhongduan Git repository at commit 04c3c719f2db48ee0fd7ee62642386816667ce08. All server/*.mjs files are unchanged Git blob bytes. This fixture exists only for real HTTP authorization/product-boundary integration tests; it is excluded from application packaging. It replaces the unavailable external CI checkout, preserving the pinned server version. Public frontend assets are not included because these tests exercise server APIs only. HETUN_TERMINAL_SOURCE may override this fixture with a full checkout.

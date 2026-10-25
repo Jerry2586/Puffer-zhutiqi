@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const version='0.3.0';
+const version='0.4.0';
 </script>
 <template>
 <section class="offline-settings" aria-label="本机与离线设置">
