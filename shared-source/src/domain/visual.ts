@@ -69,5 +69,5 @@ export function fixedModule(theme:Theme,page:string,id:string):import('./types')
  return {id,title:m.title??titles[id]??'内容模块',subtitle:m.subtitle??'',kind:'poster',source:'latest',categoryId:'',enabled:m.visible!==false,
  style:m.style??(highlights?'grid2':'grid3'),limit:m.limit??(highlights?2:6),columns:m.columns??(highlights?2:3),
  radius:m.radius??Number(cards.radius??theme.layout.posterRadius),gap:m.gap??(highlights?5:4),ratio:m.ratio??(highlights?'16/9':'2/3'),
- titleSize:m.titleSize,showTitle:m.showTitle??true,showScore:m.showScore??true,showNote:m.showNote??true,showYear:m.showYear??false,showMore:m.showMore??false};
+ titleSize:m.titleSize,background:m.background,textColor:m.textColor,showTitle:m.showTitle??true,showScore:m.showScore??true,showNote:m.showNote??true,showYear:m.showYear??false,showMore:m.showMore??false};
 }

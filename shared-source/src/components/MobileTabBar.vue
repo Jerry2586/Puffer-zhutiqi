@@ -7,7 +7,7 @@ const emit=defineEmits<{navigate:[item:NavItem];select:[]}>();
 const stockSymbols=new Set(['','⌂','▷','♔','○','◉','▦','☆','↗','▤','⚙','⌕','▶','♡','♥']);
 const iconNames:Record<string,string>={home:'home',shortdrama:'shortdrama',member:'member',mine:'mine',category:'category',search:'search',ranking:'ranking',schedule:'schedule',history:'history',library:'favorite',settings:'settings'};
 function artwork(n:NavItem){return props.page===n.page?(n.activeIcon||n.icon||''):(n.icon||'');}
-function customImage(n:NavItem){return artwork(n).startsWith('http://')||artwork(n).startsWith('https://')||artwork(n).startsWith('/api/');}
+function customImage(n:NavItem){return /^(assets\/|\/api\/assets\/|https?:\/\/|data:image\/)/i.test(artwork(n))&&!!assetUrl(artwork(n));}
 function choose(n:NavItem){if(props.editing)emit('select');else emit('navigate',n);}
 </script>
 <template>

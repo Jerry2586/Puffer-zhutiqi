@@ -19,13 +19,12 @@ export function createClientContract(platform,integration){
   format:'hetun-client-contract',version:1,contentProvider:'maccms-v10',transport:'https-json',
   apiBase:config.apiBase,platform,targets:[...nativeTargets[platform]],
   apiSchema:{...structuredClone(apiSchema),servers:config.apiBase?[{url:config.apiBase}]:[]},
-  readiness:{configured:!!config.apiBase,nativeAdapter:'required',gateway:'requires-deployment-verification',packer:'requires-contract-v1-adapter'},
-  theme:{format:'hetun-skeleton',version:2,renderer:'hetun-v2',schemaVersion:2,assetBase:'package-root',remoteAssets:'https-required-for-native'},
+  readiness:{configured:!!config.apiBase,nativeAdapter:platform==='web'?'requires-desktop-adapter':'requires-hetun-local-client-v2-base',gateway:'requires-deployment-verification',packer:'requires-contract-v1-adapter'},
+  theme:{format:'hetun-skeleton',version:2,renderer:'hetun-v2',schemaVersion:2,source:'manually-exported-package',assetBase:'package-root',remoteAssets:'https-required-for-native'},
   authentication:{scheme:'Bearer',source:'POST /api/member/login (operations gateway only)',embedCredentials:false,tokenLifetimeSeconds:28800},
   endpoints:{
    memberLogin:{method:'POST',path:'/api/member/login',request:{username:'string',password:'string'},response:{token:'string',profile:'object'},availability:'operations gateway with CMS member API; unavailable in local theme service'},
    memberLogout:{method:'POST',path:'/api/member/logout',authentication:'required bearer',response:{ok:'boolean'},availability:'operations gateway only'},
-   theme:{method:'GET',path:'/api/theme',query:{platform},response:{theme:'Theme',version:'integer',template:'string',publishedAt:'string|null'}},
    categories:{method:'GET',path:'/api/catalog/categories',response:{items:'Category[]'}},
    catalog:{method:'GET',path:'/api/catalog',query:{page:'integer >= 1',keyword:'string',category:'string',ids:'comma-separated IDs'},response:{items:'Vod[]',page:'integer',pages:'integer',total:'integer'}},
    playback:{method:'POST',path:'/api/playback',request:{id:'string',sid:'integer >= 1 (source index)',nid:'integer >= 1 (episode index)'},response:{url:'http(s) string; native TLS policy applies',name:'string'},authentication:'optional bearer; CMS decides viewing permission',requires:'河豚 CMS 播放适配文件'}
@@ -37,6 +36,6 @@ export function createClientContract(platform,integration){
   },
   errors:{shape:{error:'string'},handling:'Check HTTP status before decoding; handle 401/403/404 and other non-2xx responses.'},
   build:{input:'contract-compatible-base-apk-and-theme',android:'inject theme/runtime, edit literal manifest, align and sign APK; preserve dex/resources/package identity',ios:'binary repack adapter not implemented',secrets:'keystore, passwords, p12 and provisioning profiles stay in packer secure storage'},
-  limitations:['Native renderers must implement hetun-v2 theme fields; theme center does not provide Kotlin/Swift renderers.','Targets describe intended adapters, not certified compatibility with arbitrary APKs.','MacCMS collection API alone cannot provide all login, payment or playback permission features.']
+  limitations:['Android full-theme packaging requires the packer base APK with renderer hetun-local-client-v2; older limited renderers remain incompatible.','Targets describe intended adapters, not certified compatibility with arbitrary APKs.','MacCMS collection API alone cannot provide all login, payment or playback permission features.']
  };
 }

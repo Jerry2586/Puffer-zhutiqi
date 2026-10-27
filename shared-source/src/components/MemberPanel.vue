@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import {nativeRuntime,openExternal} from '@/services/client-runtime';
 import PufferMark from './PufferMark.vue';
 import QR from 'qrcode/lib/core/qrcode';
 import {ref,onMounted,watch} from 'vue';import {memberApi,getServiceBase} from '@/services/api';
 const props=defineProps<{demo?:boolean;accountOnly?:boolean}>();const profile=ref<any>(null),plans=ref<any[]>([]),orders=ref<any[]>([]),username=ref(''),password=ref(''),password2=ref(''),register=ref(false),busy=ref(false),message=ref(''),mode=ref('account'),config=ref<any>({}),payUrl=ref(''),pending=ref<any>(null),payMethod=ref('alipay'),qrRows=ref<boolean[][]>([]),amount=ref(10),period=ref('month');
 const emit=defineEmits<{profile:[value:any];account:[]}>();watch(profile,v=>emit('profile',v),{deep:true});
-let platform='web';
+let platform=nativeRuntime()?'android':'web';
 // #ifdef APP-PLUS
 platform=uni.getSystemInfoSync().platform==='ios'?'ios':'android';
 // #endif
@@ -17,9 +18,9 @@ async function purchase(id:number,points=false){await run(async()=>{if(platform=
 async function recharge(){await run(async()=>{if(platform==='ios')throw new Error('iOS 内购尚未配置。');const v=await memberApi.recharge(Number(amount.value),platform);pending.value=v.order;payUrl.value='';qrRows.value=[];message.value='充值订单已创建，支付完成后请查询订单状态。';});}
 async function check(code:string){await run(async()=>{const result=await memberApi.order(code);message.value=Number(result.order.order_status)===1?'CMS 已确认支付成功。':'CMS 尚未确认支付。';orders.value=(await memberApi.orders()).orders;profile.value=(await memberApi.profile()).profile;});}
 async function checkout(order=pending.value){await run(async()=>{if(platform==='ios')throw new Error('iOS 内购尚未配置。');pending.value=order;payUrl.value='';qrRows.value=[];const v=await memberApi.checkout(Number(order.order_id),order.order_code,payMethod.value,platform);if(v.kind==='qrcode'){const m=QR.create(v.code,{errorCorrectionLevel:'M'}).modules;qrRows.value=Array.from({length:m.size},(_,r)=>Array.from({length:m.size},(_,c)=>!!m.get(r,c)));message.value='请使用相应支付 App 扫描二维码，完成后查询 CMS 订单状态。';}else {payUrl.value=v.checkoutPath?getServiceBase()+v.checkoutPath:v.url;message.value='收银台已准备，请点击前往付款。';}});}
-function payment(){if(import.meta.env.VITE_HETUN_THEME_DESKTOP==='1')return;if(!payUrl.value)return;
+async function payment(){if(import.meta.env.VITE_HETUN_THEME_DESKTOP==='1')return;if(!payUrl.value)return;
 // #ifdef H5
-window.open(payUrl.value,'_blank','noopener,noreferrer');
+if(!await openExternal(payUrl.value))message.value='无法打开付款链接，请检查地址或稍后重试。';
 // #endif
 // #ifdef APP-PLUS
 plus.runtime.openURL(payUrl.value);

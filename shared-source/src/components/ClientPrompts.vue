@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {openExternal} from '@/services/client-runtime';
 import {computed,ref,watch} from 'vue';import type {Theme,AppPage} from '@/domain/types';import {assetUrl} from '@/services/api';import {announcementKey,shouldAnnounce,updatePolicy} from '@/domain/client-notifications';import type {UpdateTarget} from '@/domain/client-notifications';
 const props=defineProps<{theme:Theme;version:string;ready:boolean;studio?:boolean;scope:string;target:UpdateTarget;announcementPreview?:number;updatePreview?:number}>();
 const emit=defineEmits<{navigate:[page:AppPage];status:[message:string];blocking:[value:boolean]}>();
@@ -27,18 +28,19 @@ function checkUpdate(preview=false){
  manualPreview.value=preview;actionError.value='';
  if(policy.value.available)dialog.value='update';else emit('status',props.theme.clientSettings.latestVersion?'当前已是最新版本':'暂未发布更新信息，请先填写最新版本号。');
 }
-function openUrl(url:string){
- if(import.meta.env.VITE_HETUN_THEME_DESKTOP==='1'){actionError.value='离线预览不打开外部链接。';return;}
- if(!/^https?:\/\//i.test(url)){actionError.value='请配置完整的 HTTPS 更新地址。';return;}
+async function openUrl(url:string){
+ if(import.meta.env.VITE_HETUN_THEME_DESKTOP==='1'){actionError.value='离线预览不打开外部链接。';return false;}
+ if(!/^https:\/\//i.test(url)){actionError.value='请配置完整的 HTTPS 更新地址。';return false;}
  // #ifdef H5
- window.open(url,'_blank','noopener,noreferrer');
+ if(!await openExternal(url)){actionError.value='无法打开更新地址，请检查 HTTPS 地址。';return false;}
  // #endif
  // #ifdef APP-PLUS
  plus.runtime.openURL(url);
  // #endif
+ return true;
 }
 function download(){if(!policy.value.url){actionError.value=props.target==='web'?'请在 Android 或 iOS 客户端更新应用。':'此平台的更新地址尚未配置。';return;}openUrl(policy.value.url);}
-function noticeAction(){const a=props.theme.announcement;if(a.url&&!/^https?:\/\//i.test(a.url)){actionError.value='公告链接尚未正确配置。';return;}if(a.url)openUrl(a.url);acknowledge();if(!a.url&&a.page!=='home')emit('navigate',a.page);}
+async function noticeAction(){const a=props.theme.announcement;if(a.url&&!/^https:\/\//i.test(a.url)){actionError.value='公告链接尚未正确配置。';return;}if(a.url&&!await openUrl(a.url))return;acknowledge();if(!a.url&&a.page!=='home')emit('navigate',a.page);}
 defineExpose({checkUpdate,blocking:forced});
 </script>
 <template><view v-if="dialog" class="client-prompt" @touchmove.stop.prevent @keydown.esc.stop.prevent="dialog==='announcement'?acknowledge():closeUpdate()"><view class="prompt-mask" @click="dialog==='announcement'?acknowledge():closeUpdate()"/><view class="prompt-card" :class="'prompt-'+dialog" role="dialog" aria-modal="true" :aria-label="dialog==='update'?'版本更新':theme.announcement.title"><template v-if="dialog==='update'"><view class="update-art"><text>↑</text><view/><view/></view><text class="prompt-kicker">{{forced?'必须更新后继续使用':'发现新版本'}}</text><text class="prompt-title">升级至 v{{theme.clientSettings.latestVersion}}</text><text class="prompt-version">当前版本 v{{version}} · {{target==='ios'?'iOS':target==='android'?'Android':'网页'}}</text><scroll-view scroll-y class="prompt-copy"><text>{{theme.clientSettings.updateNotes||'服务方暂未填写更新说明。'}}</text></scroll-view><text v-if="actionError" class="prompt-error">{{actionError}}</text><button class="prompt-primary" @click="download">{{target==='ios'?'前往 App Store 更新':'立即更新'}}</button><button v-if="!forced" class="prompt-secondary" @click="closeUpdate">稍后再说</button><text v-else class="force-hint">此版本需要更新，升级完成后重新打开应用。</text><button v-if="studio&&manualPreview" class="preview-close" @click="dialog='';manualPreview=false">结束预览</button></template><template v-else><image v-if="theme.announcement.image" class="notice-cover" :src="assetUrl(theme.announcement.image)" mode="aspectFill"/><text class="prompt-kicker">{{theme.brand.name}} · 公告</text><text class="prompt-title">{{theme.announcement.title||'公告'}}</text><scroll-view scroll-y class="prompt-copy"><text>{{theme.announcement.text||'请先填写公告内容。'}}</text></scroll-view><text v-if="actionError" class="prompt-error">{{actionError}}</text><button class="prompt-primary" @click="noticeAction">{{theme.announcement.actionLabel||'知道了'}}</button><button v-if="theme.announcement.url||theme.announcement.page!=='home'" class="prompt-secondary" @click="acknowledge">关闭</button></template></view></view></template>

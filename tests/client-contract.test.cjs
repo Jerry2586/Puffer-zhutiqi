@@ -14,7 +14,7 @@ test('各端固定映射到自己的布局，接口参数与实际网关一致',
  const {createClientContract}=await load('client-contract.mjs');
  for(const [platform,targets]of Object.entries({mobile:['android-phone','ios-iphone'],tablet:['android-tablet','ios-ipad'],tv:['android-tv'],web:['web']})){
   const c=createClientContract(platform,{version:1,apiBase:'https://api.example.com'});
-  assert.deepEqual(c.targets,targets);assert.equal(c.endpoints.theme.query.platform,platform);assert.equal(c.version,1);assert.equal(c.readiness.configured,true);assert.equal(c.readiness.nativeAdapter,'required');
+  assert.deepEqual(c.targets,targets);assert.equal(c.endpoints.theme,undefined);assert.equal(c.theme.source,'manually-exported-package');assert.equal(c.version,1);assert.equal(c.readiness.configured,true);assert.equal(c.readiness.nativeAdapter,platform==='web'?'requires-desktop-adapter':'requires-hetun-local-client-v2-base');
   assert.equal(c.endpoints.playback.method,'POST');assert.match(c.endpoints.playback.request.sid,/>= 1/);assert.equal(c.endpoints.catalog.path,'/api/catalog');
  }
  assert.equal(createClientContract('mobile').readiness.configured,false);

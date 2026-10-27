@@ -37,7 +37,7 @@ test('page overrides and local background asset survive actual ZIP export and im
  const zip=await exportTheme({id:'page-design-test',name:'页面设计回归',platform:'mobile',draft},assets);
  const manifest=JSON.parse(readPackage(zip).get('manifest.json'));
  assert.match(manifest.theme.pageDesign.category.backgroundImage,/^assets\//);
- assert.ok(manifest.packaging.fields.includes('pageDesign.category.visual.cards.radius'));
+ assert.ok(manifest.packaging.fields.includes('pageDesign[].visual.cards.radius'));
  const restored=await installPackage({data:zip.toString('base64')},path.join(root,'restored'));
  assert.deepEqual(restored.draft.pageDesign,draft.pageDesign);
  assert.equal(restored.draft.sections.find(s=>s.id==='movie-only').categoryEntry,'movie');
