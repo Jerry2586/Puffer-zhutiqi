@@ -34,7 +34,8 @@ async function main(){
  try{if(!(await fetch(smoke.origin)).ok)throw Error('主题编译页面无法读取');const editable=await fetch(smoke.origin+'/api/admin/state',{headers:{Cookie:'hetun_session='+smoke.cookie}});if(!editable.ok||!(await editable.json()).templates.length)throw Error('无Key本地主题库无法编辑');await fs.writeFile(path.join(batch,'service-smoke.json'),JSON.stringify({ok:true,defaultSkeleton:true,health:true,frontend:true,localAuthoring:true,editable:true}));}finally{await smoke.stop();}
  console.log('已验证独立运行资源：主题服务、默认骨架和编译页面。');
  if(process.argv.includes('--frontend-only')){await fs.writeFile(path.join(root,'latest-frontend.json'),JSON.stringify({version:pkg.version,batch,compiler,resource},null,2));console.log(JSON.stringify({version:pkg.version,resource},null,2));return;}
- for(const name of ['main.cjs','preload.cjs','core','renderer','assets','package.json','README.md','ARCHITECTURE.md','PACKAGE-CONTRACT.md','NATIVE-INTEGRATION.md'])await fs.cp(path.join(source,name),path.join(stage,name),{recursive:true});
+ await fs.mkdir(path.join(stage,'core'),{recursive:true});
+ for(const name of ['main.cjs','preload.cjs','core/local-service.cjs','core/offline-network.cjs','core/zip.cjs','core/appearance.cjs','core/windows-shortcuts.cjs','assets','package.json','README.md','ARCHITECTURE.md','PACKAGE-CONTRACT.md','NATIVE-INTEGRATION.md'])await fs.cp(path.join(source,name),path.join(stage,name),{recursive:true});
  await fs.writeFile(path.join(stage,'build-info.json'),JSON.stringify({version:pkg.version,builtAt:new Date().toISOString(),sourceRevision:revision},null,2));
  const req=createRequire(path.join(electronDev,'package.json')),{build,Platform,Arch}=req('electron-builder'),electronPkg=req('electron/package.json');
  const release=path.join(root,'release','v'+pkg.version);await fs.mkdir(release,{recursive:true});

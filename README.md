@@ -1,13 +1,13 @@
 # 河豚主题中心
 
-Windows 独立主题制作软件，版本 **0.4.1**。本仓库用于主题中心源码、后续版本更新与程序发布。
+Windows 独立主题制作软件，版本 **0.4.2**。本仓库用于主题中心源码、后续版本更新与程序发布。
 
 ## 直接使用
 
 当前 main 分支构建完成后，可到 GitHub Actions 对应运行下载 theme-center-windows 成品。创建版本标签并通过检查后，成品才会进入 Releases：
 
-- **Hetun-Theme-Center-0.4.1-x64-Setup.exe**：Windows 64位安装包，推荐日常使用。
-- **Hetun-Theme-Center-0.4.1-x64.exe**：便携程序，无需安装开发环境。
+- **Hetun-Theme-Center-0.4.2-x64-Setup.exe**：Windows 64位安装包，推荐日常使用。
+- **Hetun-Theme-Center-0.4.2-x64.exe**：便携程序，无需安装开发环境。
 - **SHA256SUMS.txt**：文件校验值。
 
 当前为正式发布版本，Windows 程序尚未配置代码签名。安装和便携版都自带前端、主题服务和运行时，不需要用户安装 Node、uni-app 或 Electron。安装前关闭主题中心；覆盖安装保留已保存数据。两种程序共用本机主题数据，建议固定使用一种入口。
@@ -50,7 +50,7 @@ node scripts/build.cjs
 
 第一次 setup 会下载锁定的 uni-app 与 Electron 构建依赖。完整构建依次执行 Vue/TypeScript 检查、实际 H5 编译、真实本机主题服务启动与编辑检查，再生成便携包和安装包。
 
-仅编译页面：node scripts/build.cjs --frontend-only。成品位置为外部环境下 release/v0.4.1/，latest-build.json 记录本次构建，release-info.json 和程序内构建信息记录版本与 Git提交。
+仅编译页面：node scripts/build.cjs --frontend-only。成品位置为外部环境下 release/v0.4.2/，latest-build.json 记录本次构建，release-info.json 和程序内构建信息记录版本与 Git提交。
 
 可选环境变量：HETUN_TOOLS_ROOT、HETUN_THEME_BUILD_ROOT、HETUN_UNI_DEPS、HETUN_ELECTRON_DEV；这些目录必须在仓库外。HETUN_FILM_SOURCE 可显式指定另一份兼容共享源码；默认使用本仓库 shared-source。常规发布请保持默认，确保成品对应仓库代码。
 

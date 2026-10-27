@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os'),net=require('node:net'),http=require('node:http'),crypto=require('node:crypto');
 const {pathToFileURL}=require('node:url'),{spawn}=require('node:child_process');
-const {startLocal}=require('../core/local-service.cjs'),{LicenseClient,verifyLease}=require('../core/license.cjs'),{makeZip,readZip}=require('../core/zip.cjs');
+const {startLocal}=require('../core/local-service.cjs'),{LicenseClient,verifyLease}=require('./fixtures/license-server/client.cjs'),{makeZip,readZip}=require('../core/zip.cjs');
 const film=process.env.HETUN_FILM_SOURCE||path.resolve(__dirname,'../shared-source'),cloud=process.env.HETUN_CLOUD_SOURCE||path.resolve(__dirname,'fixtures/license-server');
 async function port(){const s=net.createServer();await new Promise(r=>s.listen(0,'127.0.0.1',r));const p=s.address().port;await new Promise(r=>s.close(r));return p;}
 async function stop(p){if(p.exitCode!==null)return;await new Promise(r=>{const timer=setTimeout(()=>{p.kill('SIGKILL');r();},3000);p.once('exit',()=>{clearTimeout(timer);r();});p.kill();});}
