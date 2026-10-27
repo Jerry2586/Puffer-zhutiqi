@@ -61,7 +61,7 @@ const localAuthoring=themeOnly&&process.env.HETUN_LOCAL_THEME_AUTHORING==='1'&&h
 const cloudLicense=localAuthoring?null:await licensing(dataDir);
 const license=localAuthoring?{require:async()=>({themes:['*']})}:{...cloudLicense,status:async()=>({...await cloudLicense.status(),localAuthoring:false})};
 // Offline authoring exposes only local storage and theme package operations.
-const offlineRoutes=new Set(['/api/health','/api/admin/login','/api/admin/logout','/api/admin/state','/api/admin/install','/api/admin/template/rename','/api/admin/template/remove','/api/admin/asset','/api/admin/draft','/api/admin/publish','/api/admin/export','/api/theme']);
+const offlineRoutes=new Set(['/api/health','/api/admin/login','/api/admin/logout','/api/admin/state','/api/admin/install','/api/admin/template/rename','/api/admin/template/remove','/api/admin/asset','/api/admin/draft','/api/admin/export']);
 if(host !== '127.0.0.1' && !configuredOrigin) throw new Error('开放远程服务前必须设置 HETUN_PUBLIC_ORIGIN 为实际 HTTPS 前端地址。');
 function send(res,status,data) { res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); res.end(JSON.stringify(data)); }
 async function body(req,maxBytes=256*1024) {
@@ -83,7 +83,7 @@ const server=http.createServer(async (req,res) => {
   try {
     const url=new URL(req.url,'http://local'); const route=url.pathname;
     if(localAuthoring&&(req.headers.host!=='127.0.0.1:'+port||(origin&&!allowedOrigins.has(origin)))){send(res,403,{error:'请求来源未授权。'});return;}
-    if(localAuthoring&&route.startsWith('/api/')&&!offlineRoutes.has(route)&&!route.startsWith('/api/assets/')){send(res,404,{error:'离线主题中心不连接 CMS、授权终端或会员服务。',code:'OFFLINE_ONLY'});return;}
+    if(localAuthoring&&route.startsWith('/api/')&&!offlineRoutes.has(route)&&!route.startsWith('/api/assets/')){send(res,404,{error:'主题中心仅提供本地编辑、保存和主题包导入导出。',code:'OFFLINE_ONLY'});return;}
     if (!['GET','HEAD'].includes(req.method) && ((route.startsWith('/api/admin/') && (!origin || !allowedOrigins.has(origin) || req.headers['x-hetun-client']!=='studio')) || (!route.startsWith('/api/admin/') && origin && !allowedOrigins.has(origin)))) { send(res,403,{error:'请求来源未授权。'});return; }
     if(route==='/api/health') { send(res,200,{status:'ok',service:'hetun',cmsConfigured:!localAuthoring&&!!state.cmsBase,offline:localAuthoring});return; }
     if(route==='/api/admin/login' && req.method==='POST') {
@@ -116,7 +116,7 @@ const server=http.createServer(async (req,res) => {
         await changeState(current=>{const t=templateIn(current,input.template);if(input.version!==t.version){const e=new Error('骨架已更新，请重新加载再操作。');e.status=409;throw e;}t.name=name;t.version++;current.updatedAt=new Date().toISOString();return current;});send(res,200,await studioState(input.template));return;
       }
       if(route==='/api/admin/template/remove' && req.method==='POST') {
-        const input=await body(req);await license.require('theme',input.template);let nextId='';await changeState(current=>{const t=templateIn(current,input.template);if(input.version!==t.version){const e=new Error('骨架已更新，请重新加载再操作。');e.status=409;throw e;}if(current.activeTemplates[t.platform]===t.id){if(input.unpublish!==true)throw new Error('此骨架正在发布使用，请明确确认停止发布后再删除。');delete current.activeTemplates[t.platform];}current.templates=current.templates.filter(v=>v.id!==t.id);nextId=current.templates.find(v=>v.platform===t.platform)?.id||current.templates[0]?.id||'';if(current.selectedTemplate===t.id)current.selectedTemplate=nextId;current.updatedAt=new Date().toISOString();return current;});send(res,200,await studioState());return;
+        const input=await body(req);await license.require('theme',input.template);let nextId='';await changeState(current=>{const t=templateIn(current,input.template);if(input.version!==t.version){const e=new Error('骨架已更新，请重新加载再操作。');e.status=409;throw e;}if(current.activeTemplates[t.platform]===t.id){if(!localAuthoring&&input.unpublish!==true)throw new Error('此骨架正在发布使用，请明确确认停止发布后再删除。');delete current.activeTemplates[t.platform];}current.templates=current.templates.filter(v=>v.id!==t.id);nextId=current.templates.find(v=>v.platform===t.platform)?.id||current.templates[0]?.id||'';if(current.selectedTemplate===t.id)current.selectedTemplate=nextId;current.updatedAt=new Date().toISOString();return current;});send(res,200,await studioState());return;
       }
       if(route==='/api/admin/asset' && req.method==='POST') {const input=await body(req,15*1024*1024);send(res,200,{url:await storeAsset(Buffer.from(String(input.data||''),'base64'),String(input.name||''),assetDir)});return;}
       if(route==='/api/admin/draft' && req.method==='PUT') {

@@ -7,7 +7,7 @@ export function getServiceBase():string {return String(import.meta.env.VITE_HETU
 export function setServiceBase(value:string) { if(value && !/^https?:\/\/[^\s]+$/i.test(value)) throw new Error('请输入完整的服务地址。'); uni.setStorageSync(key,value.replace(/\/$/,'')); }
 const offlineEditor=import.meta.env.VITE_HETUN_THEME_DESKTOP==='1';
 export function request<T>(endpoint:string,method:'GET'|'POST'|'PUT'='GET',data?:Record<string,unknown>):Promise<T> {
-  if(offlineEditor&&!/^\/api\/(?:admin\/(?:state|draft|publish|install|template\/(?:rename|remove)|asset|export|local-packer)(?:[?]|$)|theme(?:[?]|$)|health$)/.test(endpoint))return Promise.reject(new Error('离线预览不连接影片、会员或播放服务。'));
+  if(offlineEditor&&!/^\/api\/(?:admin\/(?:state|draft|install|template\/(?:rename|remove)|asset|export)(?:[?]|$)|health$)/.test(endpoint))return Promise.reject(new Error('主题中心仅提供本地编辑、保存和主题包导入导出。'));
   let base=offlineEditor?'':getServiceBase();
   // #ifdef APP-PLUS
   if(!base) return Promise.reject(new Error('应用未配置服务地址，请联系运营方更新安装包。'));
@@ -16,14 +16,7 @@ export function request<T>(endpoint:string,method:'GET'|'POST'|'PUT'='GET',data?
     success:response => { const payload=response.data as any; if(response.statusCode>=200 && response.statusCode<300) resolve(payload); else reject(Object.assign(new Error(payload?.error || '服务连接失败：'+response.statusCode),{status:response.statusCode,code:payload?.code})); },
     fail:() => reject(new Error('无法连接河豚服务，请检查服务地址和网络。'))}));
 }
-export interface PackagingReport {ready:boolean;errors:string[];missing:string[];renderer:string;contract:string}
-export interface PackerCapabilities {baseDigest:string;error:string;app:{id:string;name:string;device:string;os:string}|null;base:unknown}
-export interface LocalPackerReceipt {id:string;status:'queued'|'received'|'rejected';message:string;name?:string;platform?:string;compatibility?:PackagingReport;}
 export const api={
-  packerConnection:()=>request<{online:boolean;connected:boolean;message:string;capabilities:PackerCapabilities|null}>('/api/admin/local-packer'),
-  checkPackaging:(template:string)=>request<{report:PackagingReport;baseDigest:string}>('/api/admin/local-packer','POST',{template,action:'check'}),
-  sendToPacker:(template:string)=>request<LocalPackerReceipt>('/api/admin/local-packer','POST',{template}),
-  packerReceipt:(id:string)=>request<LocalPackerReceipt>('/api/admin/local-packer?id='+encodeURIComponent(id)),
   exportTheme:(template:string)=>request<{name:string;data:string}>('/api/admin/export?template='+encodeURIComponent(template)),
   license:()=>request<LicenseStatus>('/api/admin/license'),
   activateLicense:(key:string)=>request<LicenseStatus>('/api/admin/license','PUT',{key}),

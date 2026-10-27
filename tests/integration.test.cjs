@@ -39,6 +39,7 @@ test('真实云端主题独立授权、桌面服务保存发布导出、接口�
  const id=state.selectedTemplate;state.draft.brand.name='独立桌面测试';const save=await request('/api/admin/draft','PUT',{template:id,version:state.version,theme:state.draft});assert.equal(save.status,200);state=await save.json();
  const publish=await request('/api/admin/publish','POST',{template:id,version:state.version});assert.equal(publish.status,200);const preview=await request('/api/theme?platform=mobile');assert.equal(preview.status,200);assert.equal((await preview.json()).theme.brand.name,'独立桌面测试');
  assert.equal((await request('/api/theme?platform=tablet')).status,404);assert.equal((await request('/api/admin/export?template='+id)).status,200);
+ const deniedRemoval=await request('/api/admin/template/remove','POST',{template:id,version:state.version});assert.equal(deniedRemoval.status,400);assert.match((await deniedRemoval.json()).error,/停止发布/);assert.equal((await request('/api/theme?platform=mobile')).status,200,'非本地作者模式保留发布占用保护');
  assert.equal((await request('/api/admin/member')).status,404);assert.equal((await request('/api/member/login','POST',{})).status,404);
  const foreign=await fetch(local.origin+'/api/admin/draft',{method:'PUT',headers:{Origin:'http://127.0.0.1:5173',Cookie:'hetun_session='+local.cookie,'X-Hetun-Client':'studio','Content-Type':'application/json'},body:'{}'});assert.equal(foreign.status,403);
  assert.equal((await fetch(local.origin)).status,200);assert.equal((await fetch(local.origin+'/%2e%2e%5coutside')).status,400);
@@ -53,12 +54,13 @@ test('签名响应篡改和签名已过期响应都无法解锁',()=>{
  assert.equal(verifyLease(sign(base),config).scope,'theme');assert.throws(()=>verifyLease(sign({...base,exp:sec-1}),config),/到期/);assert.throws(()=>verifyLease({...sign(base),payload:Buffer.from(JSON.stringify({...base,scope:'packer'})).toString('base64url')},config),/签名/);
 });
 
-test('无Key本地作者模式实际保存发布导出，并保留会话与来源校验',async t=>{
+test('无Key本地作者只保存导出，拒绝发布和成品主题读取，保留会话与来源校验',async t=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'hetun-local-author-'));let local;
  t.after(async()=>{await local?.stop();await fs.rm(root,{recursive:true,force:true});});
+ const previousLinkRoot=process.env.HETUN_LOCAL_LINK_ROOT;process.env.HETUN_LOCAL_LINK_ROOT=path.join(root,'test-local-link');t.after(()=>{if(previousLinkRoot===undefined)delete process.env.HETUN_LOCAL_LINK_ROOT;else process.env.HETUN_LOCAL_LINK_ROOT=previousLinkRoot;});
  const frontend=path.join(root,'frontend');await fs.mkdir(frontend);await fs.writeFile(path.join(frontend,'index.html'),'<html>local</html>');
  const stateDir=path.join(root,'state');await fs.mkdir(stateDir);const previous='{ "key": "existing-value" }';await fs.writeFile(path.join(stateDir,'cloud-license.json'),previous);
- local=await startLocal({node:process.execPath,frontend,service:film,state:stateDir,config:{},key:'',linkDirectory:path.join(root,'test-local-link'),localAuthoring:true});
+ local=await startLocal({node:process.execPath,frontend,service:film,state:stateDir,config:{},key:'',localAuthoring:true});
  const headers={Cookie:'hetun_session='+local.cookie,Origin:local.origin,'X-Hetun-Client':'studio','Content-Type':'application/json'};
  assert.equal((await fetch(local.origin+'/api/admin/state')).status,401);
  const status=await fetch(local.origin+'/api/admin/license',{headers});assert.equal(status.status,404);assert.equal((await status.json()).code,'OFFLINE_ONLY');
@@ -66,23 +68,24 @@ test('无Key本地作者模式实际保存发布导出，并保留会话与来�
  state.draft.brand.name='本地作者测试';state.draft.integration={version:1,apiBase:'https://api.example.com/gateway'};const saved=await fetch(local.origin+'/api/admin/draft',{method:'PUT',headers,body:JSON.stringify({template:state.selectedTemplate,version:state.version,theme:state.draft})});assert.equal(saved.status,200);const next=await saved.json();assert.equal(next.draft.brand.name,'本地作者测试');assert.equal(next.draft.integration.apiBase,'https://api.example.com/gateway');
  const foreign=await fetch(local.origin+'/api/admin/draft',{method:'PUT',headers:{...headers,Origin:'https://wrong.example'},body:'{}'});assert.equal(foreign.status,403);
  assert.equal((await fetch(local.origin+'/api/admin/state',{headers:{...headers,Origin:'https://wrong.example'}})).status,403);
- const published=await fetch(local.origin+'/api/admin/publish',{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate,version:next.version})});assert.equal(published.status,200);
+ const beforeExport=await fs.readFile(path.join(stateDir,'theme-state.json'),'utf8');
+ for(const origin of [local.origin,local.api]){
+  const published=await fetch(origin+'/api/admin/publish',{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate,version:next.version})});assert.equal(published.status,404);assert.equal((await published.json()).code,'OFFLINE_ONLY');
+  for(const platform of ['mobile','tablet']){const response=await fetch(origin+'/api/theme?platform='+platform,{headers});assert.equal(response.status,404);assert.equal((await response.json()).code,'OFFLINE_ONLY');}
+ }
  const exported=await fetch(local.origin+'/api/admin/export?template='+next.selectedTemplate,{headers});assert.equal(exported.status,200);const bundle=await exported.json();const manifest=JSON.parse(readZip(Buffer.from(bundle.data,'base64')).get('manifest.json'));assert.equal(manifest.theme.brand.name,'本地作者测试');assert.equal(manifest.clientContract.apiBase,'');assert.equal(manifest.theme.integration,undefined);assert.deepEqual(manifest.clientContract.targets,['android-phone','ios-iphone']);
  assert.equal((await fetch(local.origin+'/api/theme?platform=tablet')).status,404);
  assert.equal((await fetch(local.origin+'/api/member/plans',{headers})).status,404);
  assert.equal(await fs.readFile(path.join(stateDir,'cloud-license.json'),'utf8'),previous);
- const link=path.join(root,'test-local-link'),{atomic}=require('../core/local-link.cjs');
  const url=local.origin+'/api/admin/local-packer';
- assert.equal((await fetch(url)).status,401);
- assert.equal((await fetch(url,{method:'POST',headers:{...headers,Origin:'https://foreign.example'},body:JSON.stringify({template:next.selectedTemplate,action:'check'})})).status,403);
- let report=await(await fetch(url,{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate,action:'check'})})).json();assert.equal(report.report.ready,false);
- await atomic(path.join(link,'packer.json'),{protocol:1,updatedAt:new Date().toISOString()});
- await atomic(path.join(link,'packer-capabilities.json'),{protocol:'hetun-local-capabilities',version:1,updatedAt:new Date().toISOString(),app:{id:'unit-app',name:'应用',device:'mobile',os:'android'},baseDigest:'a'.repeat(64),base:{format:'hetun-base-apk',version:1,contract:'hetun-package-v1',runtime:'hetun-runtime-v1',theme:'hetun-skeleton-v2',assetRoot:'assets/',os:'android',packageName:'com.test.app',devices:['mobile'],renderer:'partial-unit-only',themeFields:['brand.name']},error:''});
- const linkStatus=await(await fetch(url,{headers})).json();assert.equal(linkStatus.connected,true);assert.equal(linkStatus.capabilities.base.renderer,'partial-unit-only');
- report=await(await fetch(url,{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate,action:'check'})})).json();assert.equal(report.report.ready,false);assert.ok(report.report.missing.includes('colors.background'));assert.equal(report.baseDigest,'a'.repeat(64));
- await assert.rejects(fs.readdir(path.join(link,'inbox')),{code:'ENOENT'});
- const sent=await(await fetch(url,{method:'POST',headers,body:JSON.stringify({template:next.selectedTemplate})})).json();assert.equal(sent.status,'queued');assert.equal(sent.compatibility.ready,false);assert.equal((await fs.readdir(path.join(link,'inbox'))).length,1);
- await atomic(path.join(link,'packer.json'),{protocol:1,updatedAt:new Date(Date.now()-9000).toISOString()});assert.equal((await(await fetch(url,{headers})).json()).capabilities,null);
+ for(const method of ['GET','POST']){const response=await fetch(url,{method,headers,body:method==='POST'?JSON.stringify({template:next.selectedTemplate}):undefined});assert.equal(response.status,410);assert.equal((await response.json()).code,'INDEPENDENT_APPS');}
+ await new Promise(resolve=>setTimeout(resolve,2200));
+ await assert.rejects(fs.access(path.join(root,'test-local-link')),{code:'ENOENT'});
+ const after=await(await fetch(local.origin+'/api/admin/state',{headers})).json();assert.equal(after.draft.brand.name,'本地作者测试');
+ assert.equal(await fs.readFile(path.join(stateDir,'theme-state.json'),'utf8'),beforeExport,'拒绝旧接口和导出不应写入主题状态');
+ assert.equal(after.activeTemplates.mobile,next.selectedTemplate,'保留旧发布绑定，直到用户明确删除');
+ const removed=await fetch(local.origin+'/api/admin/template/remove',{method:'POST',headers,body:JSON.stringify({template:after.selectedTemplate,version:after.version})});assert.equal(removed.status,200);const remaining=await removed.json();assert.ok(!remaining.templates.some(v=>v.id===after.selectedTemplate));assert.equal(remaining.activeTemplates.mobile,undefined,'删除旧主题不再要求单独解除发布占用');
+
 
 });
 test('运营中心不接受本地作者标志，仍要求真实云授权',async t=>{

@@ -17,7 +17,7 @@ test('旧终端模块独立运行，离线主题器不上传导出记录且不�
  auth=await new Authorization({root:path.join(root,'auth'),product:'theme-center',version:'0.2.4',trust:{url:origin,development:true,publicKey:app.store.publicKey},encrypt:s=>Buffer.from(s),decrypt:b=>b.toString()}).init();await auth.activate(issued.v.key);assert.equal(auth.status().valid,true);
  const center=await new ProductCenter({auth,root:path.join(root,'messages'),version:'0.2.4'}).init();
  const front=path.join(root,'front');await fs.mkdir(front);await fs.writeFile(path.join(front,'index.html'),'local integration');
- local=await startLocal({node:process.execPath,frontend:front,service:path.resolve(__dirname,'../shared-source'),state:path.join(root,'editor'),linkDirectory:path.join(root,'test-local-link'),localAuthoring:true});
+ local=await startLocal({node:process.execPath,frontend:front,service:path.resolve(__dirname,'../shared-source'),state:path.join(root,'editor'),localAuthoring:true});
  const headers={Cookie:'hetun_session='+local.cookie,Origin:local.origin,'X-Hetun-Client':'studio'};
  const editor=await(await fetch(local.origin+'/api/admin/state',{headers})).json();assert.ok(editor.selectedTemplate);
  const exported=await fetch(local.origin+'/api/admin/export?template='+editor.selectedTemplate,{headers});assert.equal(exported.status,200);await exported.arrayBuffer();

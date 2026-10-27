@@ -25,18 +25,11 @@ assets/hetun-base.json 必须声明：format=hetun-base-apk、version=1、contra
 
 必须用自己的 JKS 对最终 APK 签名。升级已安装应用时需保持相同包名与签名证书；更换签名通常不能覆盖原安装。
 
-## 两软件本机通信
+## 两软件手动交接
 
-默认共享目录：%LOCALAPPDATA%/Programs/UniAppTools/local-link，可用 HETUN_LOCAL_LINK_ROOT 为开发测试显式隔离。
+两个软件为独立个体，不共享运行状态、心跳、基础包能力、目录发布或主题队列。主题中心只保存本机草稿和导出主题包，不提供本机发布或成品主题读取服务；导出的主题 ZIP 由用户在打包器手动导入，打包器自行检查实际基础包能力。
 
-- theme-center.json、packer.json：protocol=1，updatedAt；超过 8 秒失效。
-- packer-capabilities.json：hetun-local-capabilities v1，updatedAt，app 显示信息，base 协议，baseDigest，error。仅有效心跳和新鲜能力声明可参与检查。
-- inbox/<UUID>.json：hetun-local-theme v1，主题 ZIP 的 Base64、SHA-256、名称、时间与编号。
-- receipts/<UUID>.json：真实接收结果；排队、接收和兼容状态独立。
-
-主题中心本机服务 GET /api/admin/local-packer 返回连接和基础包能力；GET 同路径加 id 查询回执。POST {template,action:"check"} 导出已保存主题并返回 report、baseDigest、app，不产生交接队列。POST {template} 真实导出并排队，返回回执和 compatibility。检查失败不删除或修改主题。
-
-以上 HTTP 接口要求本机 HttpOnly 会话；POST 必须同源 Origin、X-Hetun-Client: studio 和 application/json。不接受云端匿名调用。端口由本机服务启动后分配，不写死端口。
+旧 GET/POST /api/admin/local-packer 已停用，返回 HTTP410 和 INDEPENDENT_APPS。打包器不暴露 localReceive、localLink、themeSync 入口。原有主题、应用配置与历史共享目录保留，不删除存量数据。
 
 ## 验收范围
 
