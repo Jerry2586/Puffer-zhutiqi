@@ -1,3 +1,4 @@
+import {validateSkeleton} from './skeleton.mjs';
 import {validatePageDesign} from './page-design.mjs';
 import {readFileSync} from 'node:fs';
 import {validateIntegration} from './client-contract.mjs';
@@ -24,6 +25,8 @@ export function validateTheme(input){
  t.layout={posterRadius:num(input.layout?.posterRadius,0,32,4),density:choice(input.layout?.density,['compact','comfortable'],'compact'),heroStyle:choice(input.layout?.heroStyle,['cinema','minimal'],'cinema')};
  t.festival={kind:choice(input.festival?.kind,['none','spring','christmas','midautumn'],'none'),enabled:input.festival?.enabled===true};const a=input.announcement||{};t.announcement={enabled:a.enabled===true,text:text(a.text,4000),title:text(a.title,60,'公告'),style:choice(a.style,['strip','ticker','card','modal'],'strip'),image:asset(a.image),frequency:choice(a.frequency,['launch','daily','once'],'launch'),actionLabel:text(a.actionLabel,20,'知道了'),page:choice(a.page,pages,'home'),url:asset(a.url)};
  t.sections=ids(input.sections,40,(s,id)=>({id,...(s.categoryEntry!==undefined?{categoryEntry:categoryEntry(s.categoryEntry,s.page)}:{}),title:text(s.title,60,'推荐'),subtitle:text(s.subtitle,100),kind:choice(s.kind,['poster','landscape','ranking'],'poster'),source:choice(s.source,['latest','category'],'latest'),categoryId:text(String(s.categoryId||''),20),limit:Math.round(num(s.limit,1,60,6)),columns:Math.round(num(s.columns,1,6,3)),enabled:s.enabled!==false,style:choice(s.style,['grid2','grid3','scroll','list','ranking','mosaic'],s.kind==='ranking'?'ranking':s.kind==='landscape'?'list':'grid3'),page:choice(s.page,pages,'home'),orderBy:choice(s.orderBy,['latest','hot','score','manual'],'latest'),manualIds:text(s.manualIds,800),radius:num(s.radius,0,32,t.layout.posterRadius),gap:num(s.gap,0,32,8),ratio:choice(s.ratio,['2/3','3/4','1/1','16/9'],'2/3'),showTitle:s.showTitle!==false,showScore:s.showScore!==false,showNote:s.showNote!==false,showYear:s.showYear===true,showMore:s.showMore!==false,...(s.titleSize!==undefined?{titleSize:num(s.titleSize,10,32,18)}:{})}));
+ const definition=validateSkeleton(input.skeleton?.definition,t.sections);
+ if(definition)t.skeleton.definition=definition;
  for(const k of Object.keys(t.features))t.features[k]=input.features?.[k]!==false;
  t.features.memberCard=(input.features?.memberCard??input.features?.member)!==false;
  for(const k of ['navigation','categories'])t[k]=ids(input[k]??t[k],20,(s,id)=>({id,label:text(s.label,20),page:choice(s.page,pages,'home'),categoryId:text(String(s.categoryId||''),20),enabled:s.enabled!==false,icon: /^https?:|^\/api\/assets\//.test(s.icon||'')?asset(s.icon):text(s.icon,8),activeIcon:/^https?:|^\/api\/assets\//.test(s.activeIcon||'')?asset(s.activeIcon):text(s.activeIcon,8)}));

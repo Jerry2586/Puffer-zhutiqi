@@ -2,6 +2,7 @@
 import {computed} from 'vue';
 import type {Theme,Vod,Category,Section,AppPage,NavItem} from '@/domain/types';
 import {pageDesignFor,categoryPageKey,fixedModule} from '@/domain/visual';
+import {skeletonBlocks,skeletonPage,type SkeletonBlock} from '@/domain/skeleton';
 import {available} from '@/domain/presentation';
 import {assetUrl} from '@/services/api';
 import AppIcon from './AppIcon.vue';
@@ -11,7 +12,7 @@ import FilmModule from './FilmModule.vue';
 import MobileEpisodeList from './MobileEpisodeList.vue';
 import AppEmptyState from './AppEmptyState.vue';
 const props=withDefaults(defineProps<{
- theme:Theme;page:AppPage;items:Vod[];categories:Category[];sections:Section[];
+ theme:Theme;page:AppPage;layoutPage?:string;items:Vod[];categories:Category[];sections:Section[];
  sectionItems:Record<string,Vod[]>;categoryEntry?:string;categoryId?:string;editing?:boolean;studio?:boolean;
  film:Vod|null;playerPreview?:boolean;playUrl:string;source:number;episode:number;
  favorite:boolean;loading:boolean;profile?:{user_name?:string;user_points?:number;member_name?:string}|null;
@@ -24,6 +25,8 @@ const emit=defineEmits<{
 }>();
 const pageKey=computed(()=>props.page==='category'&&props.categoryEntry?categoryPageKey(props.categoryEntry):props.page);
 const layout=computed(()=>pageDesignFor(props.theme,pageKey.value));
+const blocks=computed(()=>skeletonBlocks(props.theme,props.film||props.playerPreview?(props.layoutPage||'player'):props.page).filter(b=>b.visible!==false));
+function blockRows(block:SkeletonBlock){return block.sectionId?rows.value.filter(s=>s.id===block.sectionId):rows.value;}
 const channels=computed(()=>props.theme.categories.filter(n=>n.enabled&&available(props.theme,n.page)));
 const rows=computed(()=>{
  const fallbackId=props.page==='home'?'home-content':'category-content';
@@ -42,7 +45,8 @@ function select(id:string,action:()=>void){if(props.editing)emit('select',id);el
 <template>
 <view class="reference-app" :class="{'home-page':page==='home','player-page':!!film||playerPreview}">
  <slot name="status"/>
- <template v-if="film||playerPreview">
+ <view v-for="block in blocks" :key="block.id" class="skeleton-region" @click="editing&&emit('select',block.id)" :class="{'play-info':['filmInfo','episodes','recommendations'].includes(block.component)}" :data-region="block.id" :style="{paddingBottom:(block.gap||0)+'px'}">
+ <template v-if="block.component==='player'">
   <view class="video-frame" @click="editing&&emit('select','visual-player')">
    <video v-if="film&&playUrl" class="real-video" :key="film.id+'-'+source+'-'+episode" :src="playUrl" :poster="assetUrl(film.poster)" :title="film.title" autoplay controls object-fit="contain" :show-fullscreen-btn="true" :enable-progress-gesture="true" @play="emit('remember')" @ended="emit('ended')" @error="emit('videoError')"/>
    <template v-else>
@@ -53,7 +57,8 @@ function select(id:string,action:()=>void){if(props.editing)emit('select',id);el
    <view v-if="!playUrl" class="video-top"><button aria-label="返回影片列表" @click="emit('close')"><AppIcon name="back" :size="23" color="currentColor"/></button><text class="player-caption">{{film?.title||'播放器'}} {{episodes[episode]?.name||''}}</text></view>
    <view class="player-watermark"><image v-if="theme.brand.logo" :src="assetUrl(theme.brand.logo)" mode="aspectFit"/><text>{{theme.brand.name}}</text></view>
   </view>
-  <view class="play-info">
+ </template>
+ <template v-if="block.component==='filmInfo'">
    <view class="info-tabs"><text class="active">视频</text><text>影片信息</text><view class="spacer"/><button v-if="playUrl" @click="emit('close')">返回 ›</button></view>
    <view class="title-row"><text class="film-title">{{film?.title||'暂无影片'}}</text></view>
    <view v-if="film" class="metadata"><text v-for="(tag,i) in [film.score&&film.score+'分',film.year,film.area,film.category,film.note].filter(Boolean)" :key="i">{{tag}}</text></view>
@@ -61,31 +66,47 @@ function select(id:string,action:()=>void){if(props.editing)emit('select',id);el
    <text class="film-description">{{film?.description||'资源接入后显示影片简介、真实线路和集数'}}</text>
    <text v-if="film?.actors" class="film-description">主演：{{film.actors}}</text>
    <text v-if="film?.director" class="film-description">导演：{{film.director}}</text>
-   <slot name="player-ads"/>
+ </template>
+ <template v-if="block.component==='episodes'">
    <MobileEpisodeList v-if="film" :film="film" :source="source" :episode="episode" :colors="theme.colors" @source="emit('source',$event)" @episode="emit('episode',$event)"/>
    <AppEmptyState v-else title="尚未选择影片" description="此处与安装包使用同一个播放器；线路和选集由真实影片提供"/>
-   <FilmModule v-if="recommendations.length" :theme="theme" :section="{...fixedModule(theme,'home','home-content'),title:'相关推荐',showMore:false}" :items="recommendations" :editing="editing" @select="emit('select',$event)" @open="emit('open',$event)"/>
-  </view>
  </template>
- <template v-else-if="page==='mine'">
+ <template v-if="block.component==='recommendations'">
+   <FilmModule v-if="recommendations.length" :theme="theme" :section="{...fixedModule(theme,'home','home-content'),title:'相关推荐',showMore:false}" :items="recommendations" :editing="editing" @select="emit('select',$event)" @open="emit('open',$event)"/>
+ </template>
+ <template v-if="block.component==='profileHeader'">
   <view class="profile-top"><view class="spacer"/><button aria-label="观看历史" @click="select('visual-appbar',()=>emit('navigate','history'))"><AppIcon name="history" :size="22" color="currentColor"/></button><button aria-label="应用设置" @click="select('visual-appbar',()=>emit('navigate','settings'))"><AppIcon name="settings" :size="22" color="currentColor"/></button></view>
+ </template>
+ <template v-if="block.component==='profile'">
   <view class="membership" @click="select('visual-cards',()=>emit('account',false))"><text v-if="theme.features.memberCard" class="vip-watermark">VIP</text><view class="profile-identity"><view class="avatar"><image v-if="theme.brand.logo" :src="assetUrl(theme.brand.logo)" mode="aspectFit"/><PufferMark v-else :size="47" :color="theme.colors.accent"/></view><view><text class="profile-name">{{profile?.user_name||'登录 / 注册'}}</text><text class="coins">积分 {{profile?.user_points??'—'}}</text></view></view><view v-if="theme.features.memberCard" class="vip-bottom"><text class="vip-heading">{{profile?.member_name||'VIP 会员'}}<text>专属权益</text></text><button class="gold-button" @click.stop="select('visual-cards',()=>emit('account',true))">{{profile?'立即续费':'开通会员'}}</button></view></view>
+ </template>
+ <template v-if="block.component==='shortcuts'">
   <view class="profile-shortcuts"><button @click="select('visual-cards',()=>emit('navigate','history'))"><AppIcon name="history" :size="25" color="currentColor"/><text>观看历史</text></button><button @click="select('visual-cards',()=>emit('navigate','library'))"><AppIcon name="favorite" :size="25" color="currentColor"/><text>我的收藏</text></button><button v-if="theme.features.schedule" @click="select('visual-cards',()=>emit('navigate','schedule'))"><AppIcon name="schedule" :size="25" color="currentColor"/><text>影片排期</text></button><button @click="select('visual-cards',()=>emit('navigate','category'))"><AppIcon name="menu" :size="25" color="currentColor"/><text>影片分类</text></button></view>
+ </template>
+ <template v-if="block.component==='history'">
   <view v-if="history.length" class="history-list"><button v-for="v in history.slice(0,6)" :key="v.id" @click="select('visual-cards',()=>emit('open',v))"><view class="history-cover"><image :src="assetUrl(v.poster)" mode="aspectFill"/></view><text class="history-caption">{{v.title}}</text></button></view><text v-else class="profile-note">暂无观看记录，看过的影片会保存在这里</text>
-  <slot name="mine-ads"/>
+ </template>
+ <template v-if="block.component==='services'">
   <view class="profile-services"><button v-for="s in services" :key="s.page" @click="select('visual-cards',()=>s.page==='member'?emit('account',true):emit('navigate',s.page))"><AppIcon :name="s.icon" :size="23" color="currentColor"/><text>{{s.label}}</text><text>›</text></button></view>
  </template>
- <template v-else>
+ <template v-if="block.component==='header'">
   <view class="category-search"><button v-if="theme.features.serviceMenu" aria-label="打开服务菜单" @click="select('visual-appbar',()=>emit('menu'))"><AppIcon name="menu" :size="23" color="currentColor"/></button><button class="search-box" @click="select('visual-appbar',()=>emit('navigate','search'))"><AppIcon name="search" :size="16" color="currentColor"/><text>搜索影片</text><text class="search-filter">筛选</text></button><button class="brand-dot" aria-label="个人中心" @click="select('brand',()=>emit('navigate','mine'))"><image v-if="theme.brand.logo" :src="assetUrl(theme.brand.logo)" mode="aspectFit"/><PufferMark v-else :size="23" :color="theme.colors.accent"/></button></view>
-  <view class="channel-tabs"><button v-for="n in channels" :key="n.id" :class="{active:page==='home'?n.page==='home':n.id===categoryEntry}" @click="select('categories',()=>emit('category',n))">{{n.label}}</button></view>
-  <view v-if="page==='category'&&categories.length" class="category-filters"><button :class="{active:!categoryId}" @click="select('categories',()=>emit('filter',''))">全部</button><button v-for="c in categories" :key="c.id" :class="{active:categoryId===c.id}" @click="select('categories',()=>emit('filter',c.id))">{{c.name}}</button></view>
-  <slot name="home-notice"/>
-  <view class="page-modules">
-   <ThemeCarousel v-if="layout.carousel??page==='home'" class="page-carousel" :style="{order:carouselOrder}" :theme="theme" :items="items" :design-preview="studio" native-mobile :editing="editing" @open="emit('open',$event)" @id="emit('id',$event)" @page="emit('navigate',$event as AppPage)" @select="emit('select',$event)"/>
-   <FilmModule v-for="(s,index) in rows" :key="s.id" :style="{order:(layout.moduleOrder||[]).includes(s.id)?layout.moduleOrder!.indexOf(s.id):(layout.moduleOrder||[]).length+index}" :theme="theme" :section="s" :items="moduleItems(s)" :editing="editing" @open="emit('open',$event)" @select="emit('select',$event)" @more="emit('more',$event)"/>
-  </view>
-  <slot name="catalog-footer"/>
  </template>
+ <template v-if="block.component==='channels'">
+  <view class="channel-tabs"><button v-for="n in channels" :key="n.id" :class="{active:page==='home'?n.page==='home':n.id===categoryEntry}" @click="select('categories',()=>emit('category',n))">{{n.label}}</button></view>
+ </template>
+ <template v-if="block.component==='filters'">
+  <view v-if="categories.length" class="category-filters"><button :class="{active:!categoryId}" @click="select('categories',()=>emit('filter',''))">全部</button><button v-for="c in categories" :key="c.id" :class="{active:categoryId===c.id}" @click="select('categories',()=>emit('filter',c.id))">{{c.name}}</button></view>
+ </template>
+ <template v-if="block.component==='carousel'">
+   <ThemeCarousel v-if="theme.skeleton.definition?.pages[skeletonPage(page)]?true:(layout.carousel??page==='home')" class="page-carousel" :style="{order:carouselOrder}" :theme="theme" :items="items" :design-preview="false" native-mobile :editing="editing" @open="emit('open',$event)" @id="emit('id',$event)" @page="emit('navigate',$event as AppPage)" @select="emit('select',$event)"/>
+ </template>
+ <template v-if="block.component==='content'">
+   <FilmModule v-for="(s,index) in blockRows(block)" :key="s.id" :style="{order:(layout.moduleOrder||[]).includes(s.id)?layout.moduleOrder!.indexOf(s.id):(layout.moduleOrder||[]).length+index}" :theme="theme" :section="s" :items="moduleItems(s)" :editing="editing" @open="emit('open',$event)" @select="emit('select',$event)" @more="emit('more',$event)"/>
+ </template>
+ <slot v-if="block.component==='notice'" name="home-notice"/>
+ <template v-if="block.component==='ads'"><slot v-if="film||playerPreview" name="player-ads"/><slot v-else-if="page==='mine'" name="mine-ads"/><slot v-else name="catalog-footer"/></template>
+ </view>
 </view>
 </template>
 <style scoped>

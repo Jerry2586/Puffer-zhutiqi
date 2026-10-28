@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "pages": {
+    "home": [
+      "header",
+      "channels",
+      "filters",
+      "notice",
+      "carousel",
+      "content",
+      "ads"
+    ],
+    "category": [
+      "header",
+      "channels",
+      "filters",
+      "notice",
+      "carousel",
+      "content",
+      "ads"
+    ],
+    "shortdrama": [
+      "header",
+      "channels",
+      "filters",
+      "notice",
+      "carousel",
+      "content",
+      "ads"
+    ],
+    "mine": [
+      "profileHeader",
+      "profile",
+      "shortcuts",
+      "history",
+      "ads",
+      "services"
+    ],
+    "player": [
+      "player",
+      "filmInfo",
+      "ads",
+      "episodes",
+      "recommendations"
+    ],
+    "detail": [
+      "player",
+      "filmInfo",
+      "ads",
+      "episodes",
+      "recommendations"
+    ]
+  },
+  "labels": {
+    "header": "搜索与品牌",
+    "channels": "分类目录",
+    "filters": "资源分类筛选",
+    "notice": "运营公告",
+    "carousel": "轮播图",
+    "content": "影片栏目",
+    "ads": "运营广告",
+    "profileHeader": "个人页工具栏",
+    "profile": "会员资料",
+    "shortcuts": "快捷入口",
+    "history": "观看记录",
+    "services": "服务入口",
+    "player": "播放器",
+    "filmInfo": "影片信息",
+    "episodes": "线路与播放列表",
+    "recommendations": "相关推荐"
+  }
+}

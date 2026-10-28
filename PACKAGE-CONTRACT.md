@@ -35,4 +35,4 @@ assets/hetun-base.json 必须声明：format=hetun-base-apk、version=1、contra
 
 Android 链路验证包括：真实基础 APK 编译，脱离源码和 Gradle 的主题注入、对齐、JKS 签名、apksigner 校验、aapt 身份检查、原生文件与资产完整性检查。自动化测试不替代真机界面、遥控器、真实 CMS 和播放验证。
 
-当前 Kotlin 核心渲染器能力小于主题编辑器完整功能集，完整默认主题会报告缺失字段，不能标为全部适配。iOS/Windows 共享数据协议可以复用，但二进制重打包尚未实现，不允许据目标列表显示为可用。
+旧 Kotlin 核心底包能力小于完整主题，缺失字段必须拒绝。新版完整底包使用共享客户端运行时；包含 theme.skeleton.definition v1 的主题要求打包器与实际底包支持 skeleton-definition-v1。定义中的页面、组件、间距和内容绑定必须经过严格校验，未知能力不得标为已适配。iOS/Windows 共享数据协议可以复用，但二进制重打包尚未实现，不允许据目标列表显示为可用。

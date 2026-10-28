@@ -1,13 +1,13 @@
 <script setup lang="ts">
-const version='0.4.0';
+const version='0.4.6';
 </script>
 <template>
 <section class="offline-settings" aria-label="本机与离线设置">
- <header><span class="eyebrow">LOCAL WORKSPACE</span><h1>本机与离线</h1><p>主题制作的每一步，都在你的电脑上完成。</p></header>
- <div class="offline-card"><span class="offline-badge">全部离线</span><h2>打开即用，无需 Key</h2><p>无需登录或联网激活。编辑、保存、预览、安装主题和导出主题包均由本机服务完成。</p></div>
- <div class="offline-card"><h2>主题与素材保存在本机</h2><p>草稿保留在主题中心的数据目录。导出的 ZIP 包携带已上传的本机素材，可用于备份、迁移和交给打包器。</p><p>远程图片、视频和网页不会加载；需要预览的素材，请从本机上传。</p></div>
- <div class="offline-card"><h2>成品 App 接口单独配置</h2><p>“多端接入”中的 API 地址仅随主题保存和导出。主题中心不会连接该地址；成品 App 按协议对接运营网关和苹果 CMS。</p></div>
- <footer>河豚主题中心 {{version}} · 离线版<p>更新软件时，手动导入新版本安装包。</p></footer>
+ <header><span class="eyebrow">LOCAL WORKSPACE</span><h1>本机与离线</h1><p>主题设计和草稿保存在你的电脑上。</p></header>
+ <div class="offline-card"><span class="offline-badge">本机制作</span><h2>打开即用，无需 Key</h2><p>无需登录或联网激活。编辑、保存、预览、安装主题和导出主题包均由本机服务完成。</p></div>
+ <div class="offline-card"><h2>主题与素材保存在本机</h2><p>草稿保留在主题中心的数据目录。导出的 ZIP 包携带已上传的本机素材，可用于备份、迁移和交给打包器。</p><p>主题素材可从本机上传；需要查看实际运营内容时，到“运营中心连接”中配置预览地址。</p></div>
+ <div class="offline-card"><h2>预览连接与成品配置</h2><p>“运营中心连接”仅用于主题中心的真实数据预览。成品 App 的后台地址、版本与签名在打包器中配置；主题通过 ZIP 手动导入。</p></div>
+ <footer>河豚主题中心 {{version}}<p>更新软件时，手动导入新版本安装包。</p></footer>
 </section>
 </template>
 <style scoped>

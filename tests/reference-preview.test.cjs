@@ -17,7 +17,7 @@ async function render(theme,page='home',categoryEntry='',extra={}){
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'hetun-reference-render-'));
   const outfile=path.join(dir,'reference.cjs');
   try{
-   await esbuild.build({stdin:{contents:`export {default as Component} from './components/MobileExperience.vue';export {themeForPage,categoryPageKey} from './domain/visual';`,resolveDir:path.resolve(__dirname,'../shared-source/src'),loader:'ts'},bundle:true,platform:'node',format:'cjs',outfile,logLevel:'silent',define:{'import.meta.env':JSON.stringify({VITE_HETUN_THEME_DESKTOP:'1'})},plugins:[{name:'actual-vue-components',setup(build){
+   await esbuild.build({stdin:{contents:`export {default as Component} from './components/MobileExperience.vue';export {themeForPage,categoryPageKey} from './domain/visual';export {skeletonBlocks,skeletonBlockForSelection} from './domain/skeleton';`,resolveDir:path.resolve(__dirname,'../shared-source/src'),loader:'ts'},bundle:true,platform:'node',format:'cjs',outfile,logLevel:'silent',define:{'import.meta.env':JSON.stringify({VITE_HETUN_THEME_DESKTOP:'1'})},plugins:[{name:'actual-vue-components',setup(build){
     build.onResolve({filter:/^vue(?:\/server-renderer)?$/},args=>({path:dependency.resolve(args.path),external:true}));
     build.onResolve({filter:/^@\//},args=>({path:path.resolve(__dirname,'../shared-source/src',args.path.slice(2))+ (path.extname(args.path)?'':'.ts')}));
     build.onLoad({filter:/\.vue$/},async args=>{
@@ -66,10 +66,10 @@ test('shared mine and home use uploaded logo and actual member state',async()=>{
  for(const html of [home,mine])assert.ok(html.includes(t.brand.logo));
  for(const text of ['实际用户','73','年度会员','真实接口影片'])assert.ok(mine.includes(text),text);
 });
-test('editor keeps approved reference skeleton while client keeps its actual data renderer',async()=>{
+test('editor and packaged client use the shared actual data renderer',async()=>{
  const editor=await fs.readFile(path.resolve(__dirname,'../renderer/workbench/ThemeWorkbench.vue'),'utf8');
  const controller=await fs.readFile(path.resolve(__dirname,'../shared-source/src/components/AppExperience.vue'),'utf8');
- assert.match(editor,/<ReferenceSkeleton/);assert.match(editor,/@design="openDesign"/);assert.match(editor,/@category="chooseCategory"/);
+ assert.match(editor,/<AppExperience v-else/);assert.doesNotMatch(editor,/<ReferenceSkeleton/);assert.match(editor,/@category="chooseCategory"/);
  assert.match(controller,/<MobileExperience v-if="sharedMobile"/);
  assert.match(controller,/nativePhone=computed\(\(\)=>mobileClient.value\)/);
 });
@@ -86,4 +86,28 @@ test('category content uses currently filtered catalog instead of stale section 
  const stale={...film(),id:'stale',title:'过期分类数据'};
  const html=await render(t,'category','',{sections:[section],items:[film()],sectionItems:{'category-content':[stale]}});
  assert.match(html,/真实接口影片/);assert.doesNotMatch(html,/过期分类数据/);
+});
+
+test('imported definitions reorder the same live renderer and enable category carousels',async()=>{
+ const t=theme();t.carousel.effect='fade';t.carousel.slides=[{id:'banner',title:'实际运营轮播',image:'/api/assets/'+ 'c'.repeat(64)+'.png',video:'',vodId:'1',page:'home'}];t.pageDesign={category:{carousel:false}};
+ const def=(order)=>({version:1,id:'layout-'+order[0],name:'布局',pages:{category:{blocks:order.map(component=>({id:'region-'+component,component}))}}});
+ t.skeleton.definition=def(['carousel','header','content']);const first=await render(t,'category');
+ t.skeleton.definition=def(['header','content','carousel']);const second=await render(t,'category');
+ assert.ok(first.indexOf('data-region="region-carousel"')<first.indexOf('data-region="region-header"'));
+ assert.ok(second.indexOf('data-region="region-header"')<second.indexOf('data-region="region-carousel"'));
+ for(const html of [first,second]){assert.match(html,/实际运营轮播/);assert.doesNotMatch(html,/离线排版示意/);}
+});
+
+test('content selection maps section clicks to generic or explicitly bound skeleton blocks',async()=>{
+ await render(theme());const {skeletonBlockForSelection,skeletonBlocks}=await compiled;
+ const t=theme();t.sections=[{...t.sections[0],id:'custom-section',page:'home'}];
+ assert.equal(skeletonBlockForSelection(t,'home','home-content').id,'content');
+ assert.equal(skeletonBlockForSelection(t,'home','custom-section').id,'content');
+ assert.equal(skeletonBlockForSelection(t,'category','custom-section'),undefined);
+ t.skeleton.definition={version:1,id:'bound-layout',name:'独立骨架',pages:{home:{blocks:[{id:'bound',component:'content',sectionId:'custom-section'}]}}};
+ assert.equal(skeletonBlockForSelection(t,'home','custom-section').id,'bound');
+ assert.equal(skeletonBlockForSelection(t,'home','home-content'),undefined);
+ assert.ok(skeletonBlocks(t,'shortdrama').some(b=>b.component==='carousel'));
+ const controller=await fs.readFile(path.resolve(__dirname,'../shared-source/src/components/AppExperience.vue'),'utf8');
+ assert.ok(controller.includes("['home','mine','category','shortdrama'].includes(page.value)"));
 });

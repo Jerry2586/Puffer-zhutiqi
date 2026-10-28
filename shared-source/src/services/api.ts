@@ -5,14 +5,16 @@ export interface LicenseStatus {url:string;domain:string;keyConfigured:boolean;t
 const key='hetun-service-base';
 export function getServiceBase():string {return String(import.meta.env.VITE_HETUN_SERVICE_BASE || '').replace(/\/$/,'');}
 export function setServiceBase(value:string) { if(value && !/^https?:\/\/[^\s]+$/i.test(value)) throw new Error('请输入完整的服务地址。'); uni.setStorageSync(key,value.replace(/\/$/,'')); }
+export const desktopPreview=import.meta.env.VITE_HETUN_THEME_DESKTOP==='1';
 const offlineEditor=import.meta.env.VITE_HETUN_THEME_DESKTOP==='1';
 export function request<T>(endpoint:string,method:'GET'|'POST'|'PUT'='GET',data?:Record<string,unknown>):Promise<T> {
-  if(offlineEditor&&!/^\/api\/(?:admin\/(?:state|draft|install|template\/(?:rename|remove)|asset|export)(?:[?]|$)|health$)/.test(endpoint))return Promise.reject(new Error('主题中心仅提供本地编辑、保存和主题包导入导出。'));
+  if(offlineEditor&&!/^\/api\/(?:preview\/|catalog(?:[/?]|$)|playback$)/.test(endpoint)&&!/^\/api\/(?:admin\/(?:state|draft|install|template\/(?:rename|remove)|asset|export)(?:[?]|$)|health$)/.test(endpoint))return Promise.reject(new Error('主题中心仅提供本地编辑、保存和主题包导入导出。'));
+  if(offlineEditor){if(endpoint.startsWith('/api/catalog/categories'))endpoint=endpoint.replace('/api/catalog/categories','/api/preview/categories');else if(endpoint.startsWith('/api/catalog'))endpoint=endpoint.replace('/api/catalog','/api/preview/catalog');else if(endpoint==='/api/playback')endpoint='/api/preview/playback';}
   let base=offlineEditor?'':getServiceBase();
   // #ifdef APP-PLUS
   if(!base) return Promise.reject(new Error('应用未配置服务地址，请联系运营方更新安装包。'));
   // #endif
-  return new Promise((resolve,reject) => uni.request({url:base+endpoint,method,data,withCredentials:true,header:{'Content-Type':'application/json','X-Hetun-Client':'studio',...(uni.getStorageSync('hetun-member-token')?{Authorization:'Bearer '+uni.getStorageSync('hetun-member-token')}:{})},timeout:15000,
+  return new Promise((resolve,reject) => uni.request({url:base+endpoint,method,data,withCredentials:true,header:{'Content-Type':'application/json','X-Hetun-Client':'studio',...(!offlineEditor&&uni.getStorageSync('hetun-member-token')?{Authorization:'Bearer '+uni.getStorageSync('hetun-member-token')}:{})},timeout:15000,
     success:response => { const payload=response.data as any; if(response.statusCode>=200 && response.statusCode<300) resolve(payload); else reject(Object.assign(new Error(payload?.error || '服务连接失败：'+response.statusCode),{status:response.statusCode,code:payload?.code})); },
     fail:() => reject(new Error('无法连接河豚服务，请检查服务地址和网络。'))}));
 }
@@ -23,7 +25,7 @@ export const api={
   clearLicense:()=>request<LicenseStatus>('/api/admin/license','PUT',{clear:true}),
   health:()=>request<{status:string;cmsConfigured:boolean}>('/api/health'),
   theme:(platform:Platform='mobile')=>request<{theme:Theme;version:number;template:string}>('/api/theme?platform='+platform),
-  catalog:(page=1,keyword='',category='',ids='')=>request<Catalog>('/api/catalog?page='+page+'&keyword='+encodeURIComponent(keyword)+'&category='+encodeURIComponent(category)+'&ids='+encodeURIComponent(ids)),
+  catalog:(page=1,keyword='',category='',ids='',orderBy='latest')=>request<Catalog>('/api/catalog?page='+page+'&keyword='+encodeURIComponent(keyword)+'&category='+encodeURIComponent(category)+'&ids='+encodeURIComponent(ids)+'&orderBy='+encodeURIComponent(orderBy)),
   categories:()=>request<{items:Category[]}>('/api/catalog/categories'),
   login:(username:string,password:string)=>request('/api/admin/login','POST',{username,password}),
   logout:()=>request('/api/admin/logout','POST',{}),state:(template='')=>request<StudioState>('/api/admin/state?template='+encodeURIComponent(template)),
@@ -48,7 +50,7 @@ export const memberApi={
  purchase:(groupId:number,period:string,platform:string)=>request<any>('/api/member/purchase','POST',{groupId,period,platform}),
  upgrade:(groupId:number,period:string)=>request<any>('/api/member/upgrade','POST',{groupId,period}),recharge:(price:number,platform:string)=>request<any>('/api/member/recharge','POST',{price,platform})
 };
-export function assetUrl(value:string){if(offlineEditor&&!/^\/api\/assets\/[a-f0-9]{64}\.(png|jpg|webp|mp4)$/.test(value)&&!/^data:image\/(png|jpeg|webp);base64,/i.test(value))return '';return value?.startsWith('/api/assets/')?getServiceBase()+value:value;}
+export function assetUrl(value:string){if(offlineEditor&&!/^\/api\/preview\/media\/[a-f0-9]{48}$/.test(value)&&!/^\/api\/assets\/[a-f0-9]{64}\.(png|jpg|webp|mp4)$/.test(value)&&!/^data:image\/(png|jpeg|webp);base64,/i.test(value))return '';return value?.startsWith('/api/assets/')?getServiceBase()+value:value;}
 export async function chooseLocalFile(accept:string):Promise<{name:string;data:string}>{
  // #ifdef H5
  return new Promise((resolve,reject)=>{const input=document.createElement('input');input.type='file';input.accept=accept;input.oncancel=()=>reject(new Error('已取消文件选择。'));input.onchange=async()=>{const file=input.files?.[0];if(!file)return reject(new Error('未选择文件。'));if(file.size>12*1024*1024)return reject(new Error('文件最大12MB。'));const bytes=new Uint8Array(await file.arrayBuffer());let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));resolve({name:file.name,data:btoa(text)});};input.click();});

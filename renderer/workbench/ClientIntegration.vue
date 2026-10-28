@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import type {ClientIntegration,Platform} from '@/domain/types';
-defineProps<{integration?:ClientIntegration;platform:Platform;busy:boolean;error:string}>();
-const emit=defineEmits<{(e:'close'):void;(e:'export'):void}>();
+import type {Platform} from '@/domain/types';
+defineProps<{platform:Platform;busy:boolean;canExport:boolean;error:string}>();
+const emit=defineEmits<{export:[]}>();
 </script>
 <template>
-<view class="modal-backdrop" @click.self="!busy&&emit('close')">
- <view class="workbench-modal integration-modal" role="dialog" aria-modal="true" aria-label="主题与打包接口">
-  <view class="modal-heading"><text>主题与打包接口</text><button :disabled="busy" aria-label="关闭" @click="emit('close')">×</button></view>
-  <text class="modal-description">主题中心制作界面、保存素材和导出主题包。后台地址、基础安装包、版本和签名统一在打包器配置。</text>
-  <view class="integration-contract"><text>主题包 · hetun-skeleton v2</text><text>打包协议 · hetun-package-v1</text><text>当前主题平台 · {{platform}}</text><text>基础 APK 必须内含 assets/hetun-base.json，明确声明设备与已实现的主题字段。</text><text>本地自动传递 ZIP，并按基础包声明检查字段与取值；未实现的选项会阻止出包。</text></view>
-  <text class="modal-hint">日常流程：在打包器导入已适配的基础 APK → 选择主题 → 设置后台与版本 → 使用自己的证书签名。基础包源码的首次构建属于独立开发流程。</text>
-  <text class="modal-hint">当前实际二次打包入口支持 Android APK。iOS、Windows 的安装包适配尚未完成；保存这些平台的主题不代表可以生成对应安装包。</text>
-  <text v-if="error" class="modal-error">{{error}}</text>
-  <view class="modal-actions"><button :disabled="busy" @click="emit('close')">关闭</button><button class="primary" :disabled="busy" @click="emit('export')">导出主题包</button></view>
+<section class="product-page integration-settings" aria-label="主题与打包接口设置">
+ <header><span class="eyebrow">PACKAGE HANDOFF</span><h1>打包接口</h1><p>主题中心保存设计和素材，导出主题包后到打包器手动导入。</p></header>
+ <view class="integration-card">
+  <h2>主题包交付</h2>
+  <view class="integration-contract"><text>主题包 · hetun-skeleton v2</text><text>打包协议 · hetun-package-v1</text><text>当前主题平台 · {{platform}}</text></view>
+  <p>在骨架库打开需要交付的主题，再从这里或设计页导出 ZIP。独立骨架、外观配置和本机素材随主题包一起交付。</p>
+  <button class="primary" :disabled="busy||!canExport" @click="emit('export')">导出主题包</button>
+  <text v-if="!canExport" class="integration-note">请先在骨架库打开一个主题。</text>
+  <text v-if="error" role="status" class="integration-error">{{error}}</text>
  </view>
-</view>
+ <view class="integration-help"><h2>打包流程</h2><p>导入已适配的基础 APK → 导入主题 ZIP → 设置后台地址和版本 → 使用自己的证书签名。</p><p>基础 APK 必须内含 assets/hetun-base.json，声明设备与已实现的主题字段。未实现的选项会阻止出包。</p><p>当前二次打包入口支持 Android APK。iOS、Windows 安装包适配尚未完成。</p></view>
+</section>
 </template>
 <style scoped>
-.integration-modal{width:min(680px,90vw);max-height:85vh;overflow-y:auto}.integration-contract{display:flex;flex-direction:column;gap:8px;padding:14px;margin:16px 0;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.integration-modal .modal-hint{display:block;line-height:1.7;margin:10px 0}.integration-modal .modal-heading{display:flex;justify-content:space-between;align-items:center;font-size:20px}
+.integration-settings{height:100%;overflow:auto;color:var(--text)}h1{font-size:30px;margin:12px 0}h2{font-size:18px;margin:0 0 12px}p{font-size:14px;line-height:1.85;color:var(--muted);margin:8px 0}.integration-card{max-width:760px;padding:28px;margin:28px 0;border:1px solid var(--line-strong);border-radius:16px;background:var(--panel)}.integration-contract{display:flex;flex-direction:column;gap:8px;margin:16px 0;font-size:13px;line-height:1.6;overflow-wrap:anywhere}.integration-card button{margin-top:20px;width:fit-content}.integration-note,.integration-error{display:block;font-size:12px;line-height:1.8;margin-top:12px;color:var(--muted)}.integration-error{color:#ed6060}.integration-help{max-width:760px;padding:4px 0 24px}@media(max-width:700px){.integration-card{padding:20px}}
 </style>

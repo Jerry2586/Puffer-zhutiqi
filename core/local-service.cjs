@@ -1,15 +1,18 @@
 'use strict';
 const fs=require('node:fs/promises'),path=require('node:path'),http=require('node:http'),net=require('node:net'),{spawn}=require('node:child_process');
 const {randomBytes}=require('node:crypto');
+const {createOperationsPreview}=require('./operations-preview.cjs');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.jpg':'image/jpeg','.webp':'image/webp','.woff2':'font/woff2','.ttf':'font/ttf'};
 async function freePort(){const s=net.createServer();await new Promise((ok,no)=>{s.once('error',no);s.listen(0,'127.0.0.1',ok);});const port=s.address().port;await new Promise(ok=>s.close(ok));return port;}
 async function startLocal({node,frontend,service,state,config={},key,logFile,localAuthoring=false,browserPreview=false}){
  await fs.mkdir(state,{recursive:true});const apiPort=await freePort(),api='http://127.0.0.1:'+apiPort;let sessionCookie='',sessionExpiresAt=0,refreshSession=async()=>false;
+ const preview=createOperationsPreview();
  const cookieName='hetun_local_'+randomBytes(12).toString('hex');
  function backendCookie(raw=''){const entries=raw.split(';').map(v=>v.trim());const scoped=entries.find(v=>v.startsWith(cookieName+'='));return scoped?'hetun_session='+scoped.slice(cookieName.length+1):raw;}
  const proxy=http.createServer(async(req,res)=>{try{
   if(!/^127\.0\.0\.1:\d+$/.test(req.headers.host||'')){res.writeHead(403);return res.end('Invalid host');}
   const url=new URL(req.url,'http://127.0.0.1');
+  if(localAuthoring&&await preview.handle(req,res,url,{authorized:!!sessionCookie&&backendCookie(req.headers.cookie).split(';').some(v=>v.trim()==='hetun_session='+sessionCookie),origin:'http://'+req.headers.host}))return;
   if(url.pathname==='/api/admin/local-packer'){res.writeHead(410,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({error:'主题中心独立运行，请导出主题包后在打包器手动导入。',code:'INDEPENDENT_APPS'}));}
   if(url.pathname.startsWith('/desktop/')){res.writeHead(404,{'Content-Type':'application/json'});return res.end(JSON.stringify({error:'离线主题中心不提供云端功能。',code:'OFFLINE_ONLY'}));}
   if(url.pathname.startsWith('/api/')){
@@ -35,7 +38,7 @@ async function startLocal({node,frontend,service,state,config={},key,logFile,loc
  if(!localAuthoring){if(config.publicKey)await fs.writeFile(path.join(state,'trusted-public.pem'),config.publicKey,{mode:0o600});await fs.writeFile(path.join(state,'cloud-license.json'),JSON.stringify({key:key||''}),{mode:0o600});}
  const child=spawn(node,[...(localAuthoring?['--require',path.join(__dirname,'offline-network.cjs')]:[]),path.join(service,'server/index.mjs')],{windowsHide:true,env:{...process.env,ELECTRON_RUN_AS_NODE:'1',HETUN_STATE_DIR:state,HETUN_HOST:'127.0.0.1',HETUN_PORT:String(apiPort),HETUN_PUBLIC_ORIGIN:origin,HETUN_PRODUCT_MODE:'theme-center',HETUN_LOCAL_THEME_AUTHORING:localAuthoring?'1':'0',HETUN_LICENSE_URL:config.url||'',HETUN_LICENSE_DOMAIN:config.domain||'127.0.0.1',HETUN_LICENSE_PUBLIC_KEY_FILE:config.publicKey?path.join(state,'trusted-public.pem'):''},stdio:['ignore','pipe','pipe']});
  let failure='',exited=false;child.once('error',e=>{failure=e.message;exited=true;});child.once('exit',()=>{exited=true;});for(const stream of [child.stdout,child.stderr])stream.on('data',b=>{failure=(failure+b.toString()).slice(-8000);if(logFile)fs.appendFile(logFile,b).catch(()=>{});});
- let stopping;function stop(){if(stopping)return stopping;stopping=(async()=>{proxy.closeAllConnections();await new Promise(ok=>proxy.close(ok));if(!exited)await new Promise(ok=>{const timer=setTimeout(()=>{child.kill('SIGKILL');ok();},3000);child.once('exit',()=>{clearTimeout(timer);ok();});child.kill();});})();return stopping;}
+ let stopping;function stop(){if(stopping)return stopping;stopping=(async()=>{preview.stop();proxy.closeAllConnections();await new Promise(ok=>proxy.close(ok));if(!exited)await new Promise(ok=>{const timer=setTimeout(()=>{child.kill('SIGKILL');ok();},3000);child.once('exit',()=>{clearTimeout(timer);ok();});child.kill();});})();return stopping;}
  try{let ready=false;for(let i=0;i<100;i++){if(exited)throw Error('主题服务启动失败：'+failure);try{const r=await fetch(api+'/api/health',{signal:AbortSignal.timeout(1000)});if(r.ok){ready=true;break;}}catch{}await new Promise(ok=>setTimeout(ok,100));}if(!ready)throw Error('主题服务启动超时');
  const creds=JSON.parse(await fs.readFile(path.join(state,'admin-credentials.json'),'utf8'));
  async function loginLocalSession(){const login=await fetch(api+'/api/admin/login',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Hetun-Client':'studio'},body:JSON.stringify({username:creds.username,password:creds.password})});if(!login.ok)throw Error('本机主题会话初始化失败');const cookie=login.headers.get('set-cookie')?.match(/hetun_session=([^;]+)/)?.[1];if(!cookie)throw Error('本机会话缺失');sessionCookie=cookie;sessionExpiresAt=Date.now()+7*60*60*1000;return true;}
