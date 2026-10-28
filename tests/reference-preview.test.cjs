@@ -66,10 +66,10 @@ test('shared mine and home use uploaded logo and actual member state',async()=>{
  for(const html of [home,mine])assert.ok(html.includes(t.brand.logo));
  for(const text of ['实际用户','73','年度会员','真实接口影片'])assert.ok(mine.includes(text),text);
 });
-test('editor and packaged mobile pages share one renderer',async()=>{
+test('editor keeps approved reference skeleton while client keeps its actual data renderer',async()=>{
  const editor=await fs.readFile(path.resolve(__dirname,'../renderer/workbench/ThemeWorkbench.vue'),'utf8');
  const controller=await fs.readFile(path.resolve(__dirname,'../shared-source/src/components/AppExperience.vue'),'utf8');
- assert.doesNotMatch(editor,/ReferenceSkeleton/);assert.match(editor,/:preview-page="designPage"/);
+ assert.match(editor,/<ReferenceSkeleton/);assert.match(editor,/@design="openDesign"/);assert.match(editor,/@category="chooseCategory"/);
  assert.match(controller,/<MobileExperience v-if="sharedMobile"/);
  assert.match(controller,/nativePhone=computed\(\(\)=>mobileClient.value\)/);
 });
