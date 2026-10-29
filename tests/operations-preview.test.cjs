@@ -17,7 +17,7 @@ async function fixture(t){
   if(req.url==='/slow'){req.on('close',()=>{closed=true;});res.writeHead(200,{'Content-Type':'video/mp4'});res.write('x');return;}
   if(req.url.startsWith('/api/playback')){res.writeHead(303,{Location:'/api/catalog'});res.end();return;}
   if(req.url.includes('keyword=redirect')){res.writeHead(302,{Location:'http://127.0.0.1:1/private'});res.end();return;}
-  res.setHeader('Content-Type','application/json');res.end(JSON.stringify({items:[{id:'one',poster:'/poster',url:'/stream.m3u8',video:'/slow',image:'/wrong',asset:'http://127.0.0.1:1/private'}]}));
+  res.setHeader('Content-Type','application/json');res.end(JSON.stringify({navigation:[{icon:'⌂',activeIcon:'home'}],items:[{id:'one',poster:'/poster',url:'/stream.m3u8',video:'/slow',image:'/wrong',asset:'http://127.0.0.1:1/private',logo:'/poster',icon:'/poster',activeIcon:'/poster',backgroundImage:'/poster'}]}));
  });
  const proxy=createOperationsPreview();let origin;
  const local=await serve((req,res)=>proxy.handle(req,res,new URL(req.url,origin),{authorized:req.headers.cookie==='session=ok',origin}));origin=local.base;
@@ -41,9 +41,11 @@ test('运营代理仅允许已登录同源会话、受限接口，且不转发�
 });
 test('媒体使用会话令牌；HLS、Range、格式检查、断开连接都实际生效',async t=>{
  const f=await fixture(t);await f.connect();
- const item=(await (await f.call('catalog')).json()).items[0];assert.match(item.poster,/^\/api\/preview\/media\/[a-f0-9]{48}$/);
+ const payload=await (await f.call('catalog')).json();assert.deepEqual(payload.navigation,[{icon:'⌂',activeIcon:'home'}]);
+ const item=payload.items[0];assert.match(item.poster,/^\/api\/preview\/media\/[a-f0-9]{48}$/);
  const fetchMedia=(url,headers={})=>fetch(f.origin+url,{headers:{Cookie:'session=ok',...headers}});
  assert.equal(await (await fetchMedia(item.poster)).text(),'image');
+  for(const field of ['logo','icon','activeIcon','backgroundImage']){assert.match(item[field],/^\/api\/preview\/media\/[a-f0-9]{48}$/);assert.equal(await(await fetchMedia(item[field])).text(),'image');}
  assert.equal((await fetchMedia(item.poster,{Range:'bytes=-'})).status,502);
  assert.equal((await fetchMedia(item.poster,{Range:'bytes=8-2'})).status,502);
  assert.equal((await fetchMedia(item.image)).status,502);
@@ -54,4 +56,14 @@ test('媒体使用会话令牌；HLS、Range、格式检查、断开连接都实
  const abort=new AbortController();const playing=await fetch(f.origin+item.video,{headers:{Cookie:'session=ok'},signal:abort.signal});await playing.body.getReader().read();abort.abort();
  for(let i=0;i<20&&!f.isClosed();i++)await new Promise(r=>setTimeout(r,10));assert.equal(f.isClosed(),true);
  await f.call('session',{method:'PUT',headers:{'Content-Type':'application/json'},body:'{"base":""}'});assert.equal((await fetchMedia(item.poster)).status,502);
+});
+
+test('公网图片地址可访问，IPv4 映射地址继承内网限制',()=>{
+ const {readFileSync}=require('node:fs');
+ const {runInNewContext}=require('node:vm');
+ const filename=require.resolve('../core/operations-preview.cjs');
+ // Exercise the real policy without making the test depend on external DNS or media hosts.
+ const blocked=runInNewContext(readFileSync(filename,'utf8')+'\n;privateAddress',{require:require('node:module').createRequire(filename),module:{exports:{}}},{filename});
+ for(const address of ['8.8.8.8','104.21.17.152','172.67.177.12','2606:4700:4700::1111','::ffff:8.8.8.8','::ffff:808:808']) assert.equal(blocked(address),false,address);
+ for(const address of ['0.0.0.0','10.0.0.1','100.64.0.1','127.0.0.1','169.254.1.1','172.16.0.1','192.168.1.1','198.18.0.1','224.0.0.1','240.0.0.1','::','::1','fc00::1','fe80::1','ff02::1','2001:db8::1','::ffff:127.0.0.1','::ffff:7f00:1','::ffff:10.0.0.1','::ffff:192.168.1.1','invalid']) assert.equal(blocked(address),true,address);
 });

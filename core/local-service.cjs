@@ -4,9 +4,9 @@ const {randomBytes}=require('node:crypto');
 const {createOperationsPreview}=require('./operations-preview.cjs');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.jpg':'image/jpeg','.webp':'image/webp','.woff2':'font/woff2','.ttf':'font/ttf'};
 async function freePort(){const s=net.createServer();await new Promise((ok,no)=>{s.once('error',no);s.listen(0,'127.0.0.1',ok);});const port=s.address().port;await new Promise(ok=>s.close(ok));return port;}
-async function startLocal({node,frontend,service,state,config={},key,logFile,localAuthoring=false,browserPreview=false}){
+async function startLocal({node,frontend,service,state,config={},key,logFile,localAuthoring=false,browserPreview=false,resolveProxy}){
  await fs.mkdir(state,{recursive:true});const apiPort=await freePort(),api='http://127.0.0.1:'+apiPort;let sessionCookie='',sessionExpiresAt=0,refreshSession=async()=>false;
- const preview=createOperationsPreview();
+ const preview=createOperationsPreview({resolveProxy});
  const cookieName='hetun_local_'+randomBytes(12).toString('hex');
  function backendCookie(raw=''){const entries=raw.split(';').map(v=>v.trim());const scoped=entries.find(v=>v.startsWith(cookieName+'='));return scoped?'hetun_session='+scoped.slice(cookieName.length+1):raw;}
  const proxy=http.createServer(async(req,res)=>{try{

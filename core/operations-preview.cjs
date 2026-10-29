@@ -5,10 +5,13 @@ const { request: httpsRequest } = require('node:https');
 const { lookup } = require('node:dns');
 const { isIP, BlockList } = require('node:net');
 const { Transform, pipeline } = require('node:stream');
+const { createPreviewProxyAgent } = require('./preview-proxy-agent.cjs');
 
 const privateNetworks = new BlockList();
 for (const [ip, prefix] of [['0.0.0.0',8],['10.0.0.0',8],['100.64.0.0',10],['127.0.0.0',8],['169.254.0.0',16],['172.16.0.0',12],['192.0.0.0',24],['192.168.0.0',16],['198.18.0.0',15],['224.0.0.0',4],['240.0.0.0',4]]) privateNetworks.addSubnet(ip,prefix,'ipv4');
-for (const [ip, prefix] of [['::',128],['::1',128],['::ffff:0:0',96],['fc00::',7],['fe80::',10],['ff00::',8],['2001:db8::',32]]) privateNetworks.addSubnet(ip,prefix,'ipv6');
+// BlockList applies IPv4 subnets to IPv4-mapped IPv6 too; blocking the whole
+// ::ffff:0:0/96 range would also reject every public IPv4 image host.
+for (const [ip, prefix] of [['::',128],['::1',128],['fc00::',7],['fe80::',10],['ff00::',8],['2001:db8::',32]]) privateNetworks.addSubnet(ip,prefix,'ipv6');
 function privateAddress(address) { const family = isIP(address); return !family || privateNetworks.check(address, family===6?'ipv6':'ipv4'); }
 function remote(value, base) {
  const url = new URL(value, base);
@@ -20,7 +23,7 @@ async function bounded(response, max) {
  for await (const chunk of response.body) { size+=chunk.length; if(size>max) { response.body.destroy?.(); throw Error('运营响应过大'); } chunks.push(chunk); }
  return Buffer.concat(chunks);
 }
-function createOperationsPreview() {
+function createOperationsPreview({ resolveProxy } = {}) {
  let base='', generation=0, controller=new AbortController();
  const tokens=new Map(), reverse=new Map();
  function json(res,status,value) { res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); res.end(JSON.stringify(value)); }
@@ -35,27 +38,35 @@ function createOperationsPreview() {
  function rewrite(value,origin,key='') {
   if(Array.isArray(value)) return value.map(v=>rewrite(v,origin));
   if(value && typeof value==='object') return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,rewrite(v,origin,k)]));
-  return typeof value==='string' && ['poster','image','video','asset','url'].includes(key) ? media(value,origin) : value;
+  if(typeof value==='string' && ['icon','activeIcon'].includes(key) && !/^(?:https?:|\/|\.\.?\/)|[\/.]/i.test(value)) return value;
+  return typeof value==='string' && ['poster','image','video','asset','logo','icon','activeIcon','backgroundImage','url'].includes(key) ? media(value,origin) : value;
  }
  // Only the root address explicitly entered by the user may resolve to a private host.
  // DNS is checked by the connection's own lookup callback, so a second lookup cannot bypass it.
- function requestOnce(url, options, signal) {
+ async function requestOnce(url, options, signal) {
   const trusted=url.origin===base;
   const hostname=url.hostname.replace(/^\[|\]$/g,'');
   if(!trusted && isIP(hostname) && privateAddress(hostname)) return Promise.reject(Error('素材地址不允许访问其他本机或内网服务'));
+  const checkedLookup=(host,opts,callback)=>{
+   lookup(host,{...opts,all:true},(error,addresses)=>{
+    if(error) return callback(error);
+    if(!addresses.length || (!trusted && addresses.some(a=>privateAddress(a.address)))) return callback(Error('素材地址不允许访问其他本机或内网服务'));
+    if(opts.all) callback(null,addresses); else callback(null,addresses[0].address,addresses[0].family);
+   });
+  };
+  const proxyRule=resolveProxy?await resolveProxy(url.href):'DIRECT';
+  signal.throwIfAborted();
+  const agent=createPreviewProxyAgent(url,proxyRule,checkedLookup,signal);
   return new Promise((resolve,reject)=>{
    const outgoing=(url.protocol==='https:'?httpsRequest:httpRequest)(url,{
     method:options.method||'GET', headers:options.headers||{}, signal,
-    lookup(host,opts,callback) {
-     lookup(host,{...opts,all:true},(error,addresses)=>{
-      if(error) return callback(error);
-      if(!trusted && addresses.some(a=>privateAddress(a.address))) return callback(Error('素材地址不允许访问其他本机或内网服务'));
-      if(opts.all) callback(null,addresses); else callback(null,addresses[0].address,addresses[0].family);
-     });
-    }
-   },incoming=>resolve({status:incoming.statusCode,ok:incoming.statusCode>=200&&incoming.statusCode<300,headers:new Headers(incoming.headers),body:incoming}));
+    ...(agent?{agent}:{}), lookup:checkedLookup
+   },incoming=>{
+    if(agent) incoming.once('close',()=>agent.destroy());
+    resolve({status:incoming.statusCode,ok:incoming.statusCode>=200&&incoming.statusCode<300,headers:new Headers(incoming.headers),body:incoming});
+   });
    outgoing.setTimeout(30000,()=>outgoing.destroy(Error('运营服务响应超时')));
-   outgoing.once('error',reject); if(options.body) outgoing.write(options.body); outgoing.end();
+   outgoing.once('error',error=>{agent?.destroy();reject(error);}); if(options.body) outgoing.write(options.body); outgoing.end();
   });
  }
  async function get(url,options,signal,api=false) {
