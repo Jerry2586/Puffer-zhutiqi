@@ -8,6 +8,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { defaultTheme, validateTheme } from './theme.mjs';
+import { migratePersistedState } from './state-migration.mjs';
 import {createMobileTemplate,mergeBundledMobileTemplates} from './mobile-template.mjs';
 import { cmsEndpoint, categoriesCms, listCms } from './cms.mjs';
 import { createCmsChecker } from './cms-health.mjs';
@@ -25,10 +26,33 @@ const statePath=path.join(dataDir,'theme-state.json');
 const credentialsPath=path.join(dataDir,'admin-credentials.json');
 const atomicWrite=async (file,data) => { const temp=file+'.'+randomBytes(5).toString('hex')+'.tmp'; await fs.writeFile(temp,JSON.stringify(data,null,2),'utf8'); await fs.rename(temp,file); };
 let state;
-try { state=JSON.parse(await fs.readFile(statePath,'utf8')); state.draft=validateTheme(state.draft); state.published=validateTheme(state.published); } catch(e) {
+let persistedText;
+try {
+  persistedText=await fs.readFile(statePath,'utf8');
+} catch(e) {
   if(e.code !== 'ENOENT') throw e;
+}
+if(persistedText===undefined){
   state={version:1,publishedVersion:1,draft:structuredClone(defaultTheme),published:structuredClone(defaultTheme),cmsBase:'',updatedAt:new Date().toISOString(),publishedAt:new Date().toISOString()};
   await atomicWrite(statePath,state);
+}else{
+  const migration=migratePersistedState(JSON.parse(persistedText));
+  state=structuredClone(migration.state);
+  state.draft=validateTheme(state.draft);
+  state.published=validateTheme(state.published);
+  if(Array.isArray(state.templates)){
+    for(const template of state.templates){
+      template.draft=validateTheme(template.draft);
+      if(template.published)template.published=validateTheme(template.published);
+    }
+  }
+  if(migration.changed){
+    const backupDir=path.join(dataDir,'migrations');
+    await fs.mkdir(backupDir,{recursive:true});
+    // Keep the original bytes before persisting only the known legacy change.
+    await fs.writeFile(path.join(backupDir,'before-page-design-migration-'+Date.now()+'-'+randomBytes(4).toString('hex')+'.json'),persistedText,{encoding:'utf8',flag:'wx'});
+    await atomicWrite(statePath,migration.state);
+  }
 }
 // Template library and one-time consolidation of the original mobile pair.
 const assetDir=path.join(dataDir,'assets');await fs.mkdir(assetDir,{recursive:true});
