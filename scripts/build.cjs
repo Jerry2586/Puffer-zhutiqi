@@ -20,8 +20,8 @@ async function main(){
  await fs.symlink(deps,path.join(compiler,'node_modules'),'junction');
  await fs.writeFile(path.join(compiler,'vite.config.ts'),"import {defineConfig} from 'vite';import uni from '@dcloudio/vite-plugin-uni';export default defineConfig({base:'/',plugins:[uni()]});\n");
  const frontend=path.join(resource,'frontend');
- const env={...process.env,VITE_HETUN_THEME_DESKTOP:'1',VITE_HETUN_SERVICE_BASE:'',UNI_INPUT_DIR:path.join(compiler,'src'),UNI_OUTPUT_DIR:frontend,UNI_PLATFORM:'h5',NODE_ENV:'production'};
- for(const k of Object.keys(env))if(k.startsWith('VITE_')&&!['VITE_HETUN_THEME_DESKTOP','VITE_HETUN_SERVICE_BASE'].includes(k))delete env[k];
+ const env={...process.env,VITE_HETUN_THEME_DESKTOP:'1',VITE_HETUN_SERVICE_BASE:'',VITE_HETUN_APP_VERSION:pkg.version,UNI_INPUT_DIR:path.join(compiler,'src'),UNI_OUTPUT_DIR:frontend,UNI_PLATFORM:'h5',NODE_ENV:'production'};
+ for(const k of Object.keys(env))if(k.startsWith('VITE_')&&!['VITE_HETUN_THEME_DESKTOP','VITE_HETUN_SERVICE_BASE','VITE_HETUN_APP_VERSION'].includes(k))delete env[k];
  await run(process.execPath,[path.join(deps,'vue-tsc/bin/vue-tsc.js'),'--noEmit'],compiler,env);
  await run(process.execPath,[path.join(deps,'@dcloudio/vite-plugin-uni/bin/uni.js'),'build','-p','h5'],compiler,env);
  // uni-app injects CDN title-bar shadows; packaged CSS must not load remote resources.
