@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const version='0.4.6';
+import {appVersion} from './app-version';
 </script>
 <template>
 <section class="offline-settings" aria-label="本机与离线设置">
@@ -7,7 +7,7 @@ const version='0.4.6';
  <div class="offline-card"><span class="offline-badge">本机制作</span><h2>打开即用，无需 Key</h2><p>无需登录或联网激活。编辑、保存、预览、安装主题和导出主题包均由本机服务完成。</p></div>
  <div class="offline-card"><h2>主题与素材保存在本机</h2><p>草稿保留在主题中心的数据目录。导出的 ZIP 包携带已上传的本机素材，可用于备份、迁移和交给打包器。</p><p>主题素材可从本机上传；需要查看实际运营内容时，到“运营中心连接”中配置预览地址。</p></div>
  <div class="offline-card"><h2>预览连接与成品配置</h2><p>“运营中心连接”仅用于主题中心的真实数据预览。成品 App 的后台地址、版本与签名在打包器中配置；主题通过 ZIP 手动导入。</p></div>
- <footer>河豚主题中心 {{version}}<p>更新软件时，手动导入新版本安装包。</p></footer>
+ <footer>河豚主题中心 {{appVersion}}<p>更新软件时，手动导入新版本安装包。</p></footer>
 </section>
 </template>
 <style scoped>

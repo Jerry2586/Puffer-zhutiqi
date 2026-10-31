@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const appVersion=import.meta.env.VITE_HETUN_APP_VERSION||'开发版';
+import {appVersion} from './app-version';
 import SkeletonPage from './SkeletonPage.vue';
 import {skeletonBlocks,skeletonLabels,ensureSkeletonPage,skeletonBlockForSelection} from '@/domain/skeleton';
 import OperationsPreview from './OperationsPreview.vue';
