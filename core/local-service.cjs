@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs/promises'),path=require('node:path'),http=require('node:http'),net=require('node:net'),{spawn}=require('node:child_process');
 const {randomBytes}=require('node:crypto');
+const {buildAuthoringKit}=require('./authoring-kit.cjs');
 const {createOperationsPreview}=require('./operations-preview.cjs');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.jpg':'image/jpeg','.webp':'image/webp','.woff2':'font/woff2','.ttf':'font/ttf'};
 async function freePort(){const s=net.createServer();await new Promise((ok,no)=>{s.once('error',no);s.listen(0,'127.0.0.1',ok);});const port=s.address().port;await new Promise(ok=>s.close(ok));return port;}
@@ -12,6 +13,20 @@ async function startLocal({node,frontend,service,state,config={},key,logFile,loc
  const proxy=http.createServer(async(req,res)=>{try{
   if(!/^127\.0\.0\.1:\d+$/.test(req.headers.host||'')){res.writeHead(403);return res.end('Invalid host');}
   const url=new URL(req.url,'http://127.0.0.1');
+  if(url.pathname==='/api/admin/authoring-kit'){
+   const headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
+   const reject=(status,error,extra={})=>{res.writeHead(status,{...headers,'Content-Type':'application/json; charset=utf-8',...extra});req.resume();res.end(JSON.stringify({error}));};
+   if(!localAuthoring)return reject(404,'页面不存在');
+   if(req.method!=='POST')return reject(405,'请使用 POST 下载制作底座',{Allow:'POST'});
+   const cookies=(req.headers.cookie||'').split(';').map(v=>v.trim());
+   if(!sessionCookie||Date.now()>=sessionExpiresAt||!cookies.includes(cookieName+'='+sessionCookie))return reject(401,'本机会话已失效，请重新打开主题中心');
+   if(req.headers.origin!=='http://'+req.headers.host)return reject(403,'无效的下载来源');
+   if(url.search||req.headers['transfer-encoding']||(req.headers['content-length']&&req.headers['content-length']!=='0'))return reject(400,'制作底座下载不接受参数或请求内容');
+   let bundle;
+   try{bundle=await buildAuthoringKit();}catch{return reject(500,'骨架制作底座资源缺失或与定稿不一致，请检查软件安装。');}
+   res.writeHead(200,{...headers,'Content-Type':'application/zip','Content-Disposition':'attachment; filename="'+bundle.name+'"','Content-Length':bundle.bytes.length});
+   return res.end(bundle.bytes);
+  }
   if(localAuthoring&&await preview.handle(req,res,url,{authorized:!!sessionCookie&&backendCookie(req.headers.cookie).split(';').some(v=>v.trim()==='hetun_session='+sessionCookie),origin:'http://'+req.headers.host}))return;
   if(url.pathname==='/api/admin/local-packer'){res.writeHead(410,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({error:'主题中心独立运行，请导出主题包后在打包器手动导入。',code:'INDEPENDENT_APPS'}));}
   if(url.pathname.startsWith('/desktop/')){res.writeHead(404,{'Content-Type':'application/json'});return res.end(JSON.stringify({error:'离线主题中心不提供云端功能。',code:'OFFLINE_ONLY'}));}

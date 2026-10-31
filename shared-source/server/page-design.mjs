@@ -1,13 +1,18 @@
 import {readFileSync} from 'node:fs';
 const schema=JSON.parse(readFileSync(new URL('../src/domain/visual-schema.json',import.meta.url),'utf8'));
 export const designPages=['home','category','search','shortdrama','member','mine','ranking','schedule','library','history','settings','disclaimer','privacy','about','player','together','detail','login','downloads','feedback','orders','recharge','dialog','empty'];
+function isCategoryPage(page){
+ if(!/^category(?:[0-9a-f]{2}){1,64}$/.test(page))return false;
+ const id=Buffer.from(page.slice(8),'hex').toString('utf8');
+ return /^[\w-]{1,64}$/.test(id)&&'category'+Buffer.from(id).toString('hex')===page;
+}
 export function validatePageDesign(input){
  if(input===undefined)return {};
  if(!input||typeof input!=='object'||Array.isArray(input))throw Error('页面设计格式无效');
  const result={};
  for(const [page,config]of Object.entries(input)){
-  if(!(designPages.includes(page)||/^category(?:[0-9a-f]{2}){1,64}$/.test(page))||!config||typeof config!=='object'||Array.isArray(config))throw Error('页面设计编号或内容无效');
-  if(Object.keys(config).some(k=>!['background','backgroundImage','visual','carousel','carouselDesign','moduleOrder','modules'].includes(k)))throw Error('页面设计包含未知字段');
+  if(!(designPages.includes(page)||isCategoryPage(page))||!config||typeof config!=='object'||Array.isArray(config))throw Error('页面设计编号或内容无效');
+  if(Object.keys(config).some(k=>!['background','backgroundImage','visual','carousel','carouselDesign','moduleOrder','modules','campaign'].includes(k)))throw Error('页面设计包含未知字段');
   const value={};
   if(config.background!==undefined){if(!/^#(?:[a-f0-9]{6}|[a-f0-9]{8})$/i.test(config.background))throw Error('页面背景颜色无效');value.background=config.background;}
   if(config.backgroundImage!==undefined){if(typeof config.backgroundImage!=='string'||config.backgroundImage&&!/^\/api\/assets\/[a-f0-9]{64}\.(png|jpg|webp|svg)$/.test(config.backgroundImage))throw Error('页面背景图片须为本机上传图片');value.backgroundImage=config.backgroundImage;}
@@ -25,6 +30,22 @@ export function validatePageDesign(input){
     else throw Error('未知页面轮播属性');
     value.carouselDesign[k]=v;
    }
+  }
+  if(config.campaign!==undefined){
+   const c=config.campaign;
+   const fields={title:40,subtitle:100,eyebrow:24,artwork:200,featuredId:30,bannerTitle:40,bannerText:100,bannerLabel:16};
+   if(!(page==='category'||isCategoryPage(page))||!c||typeof c!=='object'||Array.isArray(c)||Object.keys(c).some(k=>!Object.hasOwn(fields,k)&&!['tone','bannerPage','groupIds'].includes(k)))throw Error('活动页设置无效');
+   const clean={};
+   for(const [key,max]of Object.entries(fields)){
+    if(typeof c[key]!=='string'||c[key].length>max)throw Error('活动页文字无效：'+key);
+    clean[key]=c[key].trim();
+   }
+   if(!clean.title)throw Error('请填写活动标题');
+   if(clean.artwork&&!/^\/api\/assets\/[a-f0-9]{64}\.(png|jpg|webp|svg)$/.test(clean.artwork))throw Error('活动主视觉须为上传图片');
+   if(clean.featuredId&&!/^[\w-]{1,30}$/.test(clean.featuredId))throw Error('活动推荐影片编号无效');
+   if(!['crimson','midnight'].includes(c.tone)||!['member','library','ranking','search'].includes(c.bannerPage))throw Error('活动配色或跳转目标无效');
+   if(!Array.isArray(c.groupIds)||c.groupIds.length>12||new Set(c.groupIds).size!==c.groupIds.length||c.groupIds.some(id=>typeof id!=='string'||!/^[-a-zA-Z0-9_]{1,64}$/.test(id)))throw Error('活动片单编号无效或重复');
+   value.campaign={...clean,tone:c.tone,bannerPage:c.bannerPage,groupIds:[...c.groupIds]};
   }
   if(config.moduleOrder!==undefined){
    if(!Array.isArray(config.moduleOrder)||config.moduleOrder.length>44||new Set(config.moduleOrder).size!==config.moduleOrder.length||config.moduleOrder.some(id=>typeof id!=='string'||!/^[-a-zA-Z0-9_]{1,80}$/.test(id)))throw Error('页面模块顺序无效');

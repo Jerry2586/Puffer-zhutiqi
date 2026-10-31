@@ -1,4 +1,5 @@
-// Only this retired field is migrated. Other unknown fields remain errors.
+import {validatePageDesign} from './page-design.mjs';
+// Only invalid legacy campaign fields are migrated. Current valid designs survive.
 const retiredPageDesignFields = new Set(['campaign']);
 
 function migrateTheme(theme, onChange) {
@@ -6,10 +7,14 @@ function migrateTheme(theme, onChange) {
   const pageDesign = theme.pageDesign;
   if (!pageDesign || typeof pageDesign !== 'object' || Array.isArray(pageDesign)) return;
 
-  for (const config of Object.values(pageDesign)) {
+  for (const [page, config] of Object.entries(pageDesign)) {
     if (!config || typeof config !== 'object' || Array.isArray(config)) continue;
     for (const key of Object.keys(config)) {
       if (retiredPageDesignFields.has(key)) {
+        try {
+          validatePageDesign({[page]: {[key]: config[key]}});
+          continue;
+        } catch { /* Remove only the known legacy field rejected by the current contract. */ }
         delete config[key];
         onChange();
       }
@@ -18,7 +23,7 @@ function migrateTheme(theme, onChange) {
 }
 
 /**
- * Remove known retired fields from persisted page designs outside
+ * Remove known invalid legacy fields from persisted page designs outside
  * the fixed theme protocol. New theme input remains strict because this
  * migration only runs on already persisted application state.
  */

@@ -27,7 +27,7 @@ test('persisted page designs migrate legacy top-level fields without weakening t
   assert.equal(result.state.templates[0].draft.pageDesign.category.campaign, undefined);
   assert.deepEqual(result.state.templates[0].published.pageDesign.category.modules, {content: {style: 'grid2'}});
   assert.doesNotThrow(() => validateTheme(result.state.draft));
-  assert.throws(() => validateTheme({...structuredClone(defaultTheme), pageDesign: {category: {campaign: {title: '新输入'}}}}), /页面设计包含未知字段/);
+  assert.throws(() => validateTheme({...structuredClone(defaultTheme), pageDesign: {category: {campaign: {title: '新输入'}}}}), /活动页文字无效/);
 });
 
 test('persisted state without legacy page fields is unchanged', async () => {
@@ -88,7 +88,7 @@ test('service backs up legacy state before migration and restarts without changi
   const headers = {Cookie: 'hetun_session=' + local.cookie, Origin: local.origin, 'X-Hetun-Client': 'studio', 'Content-Type': 'application/json'};
   const rejected = await fetch(local.origin + '/api/admin/draft', {method: 'PUT', headers, body: JSON.stringify({template: 'user-theme', theme: fixture.state.templates[0].draft})});
   assert.equal(rejected.status, 400);
-  assert.match((await rejected.json()).error, /页面设计包含未知字段/);
+  assert.match((await rejected.json()).error, /活动页文字无效/);
   await local.stop();
   local = null;
   await boot();
@@ -122,5 +122,37 @@ test('startup preserves original state when backup fails or an unknown field is 
       assert.match(output, failure === 'unknown-field' ? /页面设计包含未知字段/ : failure === 'backup-ENOENT' ? /simulated backup failure/ : /EEXIST/);
       assert.equal(await fs.readFile(fixture.stateFile, 'utf8'), original);
     });
+  }
+});
+
+
+test('approved base campaign survives migration in every state slot and service restart', async t => {
+  const {migratePersistedState} = await import('../shared-source/server/state-migration.mjs');
+  const {validateTheme} = await import('../shared-source/server/theme.mjs');
+  const {readZip} = require('../core/zip.cjs');
+  const manifest = JSON.parse(readZip(await fs.readFile(path.resolve('assets/authoring-base.zip'))).get('manifest.json'));
+  const theme = manifest.theme;
+  assert.ok(theme.pageDesign.category63616d706169676e.campaign);
+  assert.doesNotThrow(() => validateTheme(theme));
+  const current = {draft: structuredClone(theme), published: structuredClone(theme), templates: [{draft: structuredClone(theme), published: structuredClone(theme)}]};
+  const result = migratePersistedState(current);
+  assert.equal(result.changed, false);
+  assert.deepEqual(result.state, current);
+  const fixture = await legacyFixture(t);
+  fixture.state.templates[0].draft = structuredClone(theme);
+  fixture.state.templates[0].published = structuredClone(theme);
+  const original = JSON.stringify(fixture.state, null, 2) + '\n';
+  await fs.writeFile(fixture.stateFile, original);
+  const frontend = path.join(fixture.root, 'front');
+  await fs.mkdir(frontend);
+  await fs.writeFile(path.join(frontend, 'index.html'), '<html>current campaign</html>');
+  let local;
+  t.after(async () => { await local?.stop(); });
+  for (let boot = 0; boot < 2; boot++) {
+    local = await startLocal({node: process.execPath, frontend, service: path.resolve('shared-source'), state: fixture.root, localAuthoring: true, browserPreview: true});
+    assert.equal(await fs.readFile(fixture.stateFile, 'utf8'), original);
+    assert.equal((await fs.readdir(fixture.root)).includes('migrations'), false);
+    await local.stop();
+    local = null;
   }
 });
