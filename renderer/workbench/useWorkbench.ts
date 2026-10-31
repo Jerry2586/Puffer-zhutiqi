@@ -47,6 +47,24 @@ export function useWorkbench(){
  function chooseDevice(p:Platform){if(busy.value)return;retain();device.value=p;search.value='';view.value='library';}
  async function saveInternal(){commitHistory();const snapshot=copy(theme.value),id=currentId.value;const s=await api.save(snapshot,version.value,id);templates.value=s.templates;version.value=s.version;if(JSON.stringify(theme.value)===JSON.stringify(snapshot)){replay=true;theme.value=normalizeTheme(copy(s.draft));replay=false;history.value[cursor.value]=JSON.stringify(theme.value);}signature.value=JSON.stringify(normalizeTheme(copy(s.draft)));cache.delete(id);retain();}
  async function save(){if(busy.value||locked.value)return;busy.value=true;error.value='';try{await saveInternal();notify('主题草稿已保存。');}catch(e){fail(e);}finally{busy.value=false;}}
+ async function downloadAuthoringKit(){
+  if(busy.value)return;
+  busy.value=true;error.value='';
+  try{
+   const desktop=bridge();
+   if(desktop?.downloadAuthoringKit){
+    const result=await desktop.downloadAuthoringKit();
+    if(result?.saved)notify('制作底座已下载。请解压后，将 theme/cinema-standard.zip 导入主题中心。');
+   }else{
+    const response=await fetch('/api/admin/authoring-kit',{method:'POST',credentials:'same-origin'});
+    if(!response.ok){const problem=await response.json().catch(()=>null);throw Error(problem?.error||'制作底座下载失败，请重试。');}
+    const url=URL.createObjectURL(await response.blob());
+    try{const a=document.createElement('a');a.href=url;a.download='hetun-authoring-kit-v1.zip';a.click();}
+    finally{setTimeout(()=>URL.revokeObjectURL(url),1000);}
+    notify('制作底座已下载。请解压后，将 theme/cinema-standard.zip 导入主题中心。');
+   }
+  }catch(e){fail(e);}finally{busy.value=false;}
+ }
  async function exportPackage(){if(busy.value||locked.value)return;busy.value=true;error.value='';try{if(dirty.value)await saveInternal();const bundle=await api.exportTheme(currentId.value);if(bridge()){const r=await bridge().saveExport(bundle);if(r?.saved)notify('主题包已导出，请在打包器中手动导入。');}else{const bytes=Uint8Array.from(atob(bundle.data),c=>c.charCodeAt(0));const url=URL.createObjectURL(new Blob([bytes],{type:'application/zip'}));const a=document.createElement('a');a.href=url;a.download=bundle.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('主题包已下载，请在打包器中手动导入。');}}catch(e){fail(e);}finally{busy.value=false;}}
  function manage(t:Template,type:'rename'|'remove'|'duplicate'){if(busy.value)return;retain();dialogTarget.value=t;dialogName.value=type==='duplicate'?t.name+' 副本':t.name;dialog.value=type;error.value='';}
  function importDialog(){if(busy.value)return;dialogName.value='';dialog.value='import';error.value='';}
@@ -70,5 +88,5 @@ export function useWorkbench(){
  function keydown(e:KeyboardEvent){if(!(e.ctrlKey||e.metaKey)||view.value!=='editor'||dialog.value)return;if(e.key.toLowerCase()==='s'){e.preventDefault();save();}else if(e.key.toLowerCase()==='z'&&!(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement)){e.preventDefault();e.shiftKey?redo():undo();}}
  onMounted(()=>{bridge()?.getAppearance?.().then((value:'dark'|'light')=>{if(value==='dark'||value==='light'){mode.value=value;uni.setStorageSync('hetun-theme-workbench-mode',value);}}).catch(fail);uni.setNavigationBarTitle({title:'河豚主题中心'});loadWorkspace();previewTimer=setInterval(()=>{if(view.value==='editor'&&previewState.value.connected&&!previewBusy.value)refreshContent();},15000);window.addEventListener('beforeunload',beforeLeave);window.addEventListener('keydown',keydown);});
  onUnmounted(()=>{previewGeneration++;if(previewTimer)clearInterval(previewTimer);if(historyTimer)clearTimeout(historyTimer);window.removeEventListener('beforeunload',beforeLeave);window.removeEventListener('keydown',keydown);});
- return {previewEpoch,previewState,previewBusy,previewTheme,connectOperations,disconnectOperations,view,device,search,theme,templates,currentId,current,version,busy,loading,error,message,serviceReady,mode,page,categoryEntry,tool,selected,interactive,items,categories,sectionItems,contentError,dialog,dialogName,dialogTarget,startupPreview,announcementPreview,updatePreview,fullPreview,locked,dirty,filtered,pageList,pageSections,selectedSection,activeDevice,canUndo,canRedo,notify,toggleMode,undo,redo,loadWorkspace,openTemplate,library,chooseDevice,save,exportPackage,manage,importDialog,commitDialog,selectElement,selectPage,addModule,moveModule,removeModule,addSlide,upload,refreshContent};
+ return {previewEpoch,previewState,previewBusy,previewTheme,connectOperations,disconnectOperations,view,device,search,theme,templates,currentId,current,version,busy,loading,error,message,serviceReady,mode,page,categoryEntry,tool,selected,interactive,items,categories,sectionItems,contentError,dialog,dialogName,dialogTarget,startupPreview,announcementPreview,updatePreview,fullPreview,locked,dirty,filtered,pageList,pageSections,selectedSection,activeDevice,canUndo,canRedo,notify,toggleMode,undo,redo,loadWorkspace,openTemplate,library,chooseDevice,save,exportPackage,downloadAuthoringKit,manage,importDialog,commitDialog,selectElement,selectPage,addModule,moveModule,removeModule,addSlide,upload,refreshContent};
 }

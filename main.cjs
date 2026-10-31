@@ -2,6 +2,7 @@
 const {app,BrowserWindow,Menu,ipcMain,dialog,shell,screen,nativeTheme}=require('electron');
 const fs=require('node:fs/promises'),path=require('node:path');
 const {startLocal}=require('./core/local-service.cjs'),{readZip}=require('./core/zip.cjs');
+const {buildAuthoringKit}=require('./core/authoring-kit.cjs');
 const root=process.env.HETUN_THEME_DATA||path.join(process.env.LOCALAPPDATA||app.getPath('appData'),'HetunThemeCenter');
 app.setPath('userData',path.join(root,'desktop'));
 app.commandLine.appendSwitch('disable-background-networking');
@@ -42,6 +43,14 @@ function secureWindow(w){
 }
 ipcMain.handle('theme:get-appearance',e=>{checkSender(e);return appearance.get();});
 ipcMain.handle('theme:set-appearance',async(e,value)=>{checkSender(e);const mode=await appearance.set(value);await diagnostic({appearance:mode});return mode;});
+ipcMain.handle('theme:download-authoring-kit',async(e)=>{
+ checkSender(e);
+ const bundle=await buildAuthoringKit();
+ const r=await dialog.showSaveDialog(win,{title:'下载骨架制作底座',defaultPath:path.join(app.getPath('downloads'),bundle.name),filters:[{name:'骨架制作资料包',extensions:['zip']}]});
+ if(r.canceled)return {saved:false};
+ if(path.extname(r.filePath).toLowerCase()!=='.zip')throw Error('请保存为.zip文件');
+ await fs.writeFile(r.filePath,bundle.bytes);return {saved:true,path:r.filePath};
+});
 ipcMain.handle('theme:save-export',async(e,v)=>{
  checkSender(e);if(!v||!/^[-a-z0-9]{3,101}\.zip$/.test(v.name)||typeof v.data!=='string'||v.data.length>17*1024*1024)throw Error('主题包无效');
  const bytes=Buffer.from(v.data,'base64'),entries=readZip(bytes);if(bytes.length>12*1024*1024||!entries.has('manifest.json'))throw Error('主题包无效');
