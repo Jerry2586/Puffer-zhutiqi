@@ -13,6 +13,12 @@ async function main(){
  for(const name of ['src','package.json','tsconfig.json','shims-uni.d.ts','index.html'])await fs.cp(path.join(film,name),path.join(compiler,name),{recursive:true});
  await fs.cp(path.join(source,'renderer/workbench'),path.join(compiler,'src/desktop'),{recursive:true});
  await fs.writeFile(path.join(compiler,'src/pages/studio/index.vue'),'<script setup lang="ts">import ThemeWorkbench from "@/desktop/ThemeWorkbench.vue";</script><template><ThemeWorkbench/></template>\n');
+ await fs.mkdir(path.join(compiler,'src/pages/skeleton'),{recursive:true});
+ await fs.writeFile(path.join(compiler,'src/pages/skeleton/index.vue'),'<script setup lang="ts">import StandaloneSkeleton from "@/desktop/StandaloneSkeleton.vue";</script><template><StandaloneSkeleton/></template>\n');
+ const pagesPath=path.join(compiler,'src/pages.json');
+ const pages=await fs.readFile(pagesPath,'utf8');
+ if(!pages.includes('"path": "pages/demo/index",'))throw Error('骨架预览路由插入失败，停止构建');
+ await fs.writeFile(pagesPath,pages.replace('"path": "pages/demo/index",','"path":"pages/skeleton/index","style":{"navigationStyle":"custom","navigationBarTitleText":"骨架设计预览"}}, {"path": "pages/demo/index",'));
  const manifestPath=path.join(compiler,'src/manifest.json'),manifest=JSON.parse(await fs.readFile(manifestPath,'utf8'));manifest.h5={...manifest.h5,title:'河豚主题中心'};await fs.writeFile(manifestPath,JSON.stringify(manifest,null,2));
  const htmlFile=path.join(compiler,'index.html');
  let html=await fs.readFile(htmlFile,'utf8');
@@ -34,7 +40,7 @@ async function main(){
  const smoke=await startLocal({node:process.execPath,frontend,service:path.join(resource,'theme-service'),state:path.join(batch,'smoke-state'),config:{},key:'',localAuthoring:true,logFile:path.join(batch,'service-smoke.log')});
  try{if(!(await fetch(smoke.origin)).ok)throw Error('主题编译页面无法读取');const editable=await fetch(smoke.origin+'/api/admin/state',{headers:{Cookie:'hetun_session='+smoke.cookie}});if(!editable.ok||!(await editable.json()).templates.length)throw Error('无Key本地主题库无法编辑');await fs.writeFile(path.join(batch,'service-smoke.json'),JSON.stringify({ok:true,defaultSkeleton:true,health:true,frontend:true,localAuthoring:true,editable:true}));}finally{await smoke.stop();}
  console.log('已验证独立运行资源：主题服务、默认骨架和编译页面。');
- if(process.argv.includes('--frontend-only')){await fs.writeFile(path.join(root,'latest-frontend.json'),JSON.stringify({version:pkg.version,batch,compiler,resource},null,2));console.log(JSON.stringify({version:pkg.version,resource},null,2));return;}
+ if(process.argv.includes('--frontend-only')){await fs.writeFile(path.join(root,'latest-frontend.json'),JSON.stringify({version:pkg.version,revision,batch,compiler,resource},null,2));console.log(JSON.stringify({version:pkg.version,resource},null,2));return;}
  await stageApp(source,stage);
  await fs.writeFile(path.join(stage,'build-info.json'),JSON.stringify({version:pkg.version,builtAt:new Date().toISOString(),sourceRevision:revision},null,2));
  const req=createRequire(path.join(electronDev,'package.json')),{build,Platform,Arch}=req('electron-builder'),electronPkg=req('electron/package.json');

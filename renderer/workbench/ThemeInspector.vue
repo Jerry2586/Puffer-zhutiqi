@@ -10,7 +10,7 @@ import {assetUrl} from '@/services/api';
 import {carouselStyles,sectionStyles} from '@/domain/presentation';
 const props=defineProps<{theme:Theme;tool:string;section?:Section;busy:boolean;visualGroup?:string;page?:string;sectionId?:string;pageOnly?:boolean;embedded?:boolean}>();
 const emit=defineEmits<{upload:[target:Record<string,any>,key:string,video?:boolean];addSlide:[];removeModule:[];startup:[]}>();
-const groupNames:Record<string,string>={brand:'品牌与风格',carousel:'轮播设计',module:'内容模块',navigation:'导航样式',colors:'主题配色',festival:'装饰设计',visual:'精细外观设计',player:'播放器设计'};
+const groupNames:Record<string,string>={brand:'品牌与风格',carousel:'轮播设计',module:'内容模块',filters:'本页子分类',navigation:'导航样式',colors:'主题配色',festival:'装饰设计',visual:'精细外观设计',player:'播放器设计'};
 const fixedId=computed(()=>!props.section&&['home-highlights','home-recommendations','home-content','category-content'].includes(props.sectionId||'')?props.sectionId:'');
 const section=computed(()=>props.section||(fixedId.value?new Proxy(fixedModule(props.theme,props.page||'home',fixedId.value),{
  get(_target,key){return Reflect.get(fixedModule(props.theme,props.page||'home',fixedId.value!),key);},
@@ -24,6 +24,11 @@ const section=computed(()=>props.section||(fixedId.value?new Proxy(fixedModule(p
 const homeModuleNames:Record<string,string>={'home-highlights':'快捷入口 / 高亮推荐','home-recommendations':'今日专属推荐','home-content':'内容推荐'};
 const carouselPage=computed(()=>pageDesignFor(props.theme,props.page||'home'));
 function ensureCarouselPage(){props.theme.pageDesign??={};return props.theme.pageDesign[props.page||'home']??={};}
+const categoryFilters=computed(()=>carouselPage.value.categoryFilters||[]);
+function editableFilters(){const page=ensureCarouselPage();return page.categoryFilters??=(categoryFilters.value.map(f=>({...f})));}
+function addFilter(){if(categoryFilters.value.length>=20)return;editableFilters().push({id:'filter-'+crypto.randomUUID().slice(0,8),label:'新子分类',categoryId:''});}
+function inputValue(event:Event){return String((event as CustomEvent<{value?:string}>).detail?.value??(event.target as HTMLInputElement|null)?.value??'');}
+function updateFilter(index:number,key:'label'|'categoryId',value:string){const filter=editableFilters()[index];if(filter)filter[key]=value;}
 function toggleCarousel(){ensureCarouselPage().carousel=carouselPage.value.carousel===false;}
 const carousel=computed(()=>{if(!props.pageOnly)return props.theme.carousel;return new Proxy(props.theme.carousel,{get(target,key){return (carouselPage.value.carouselDesign as any)?.[key]??Reflect.get(target,key);},set(_target,key,value){const page=ensureCarouselPage();page.carouselDesign??={};(page.carouselDesign as any)[key]=value;return true;}});});
 const palette=[{name:'酷影 · 深色',colors:{background:'#080b12',surface:'#151a25',text:'#f5f7fb',muted:'#8b95a8',accent:'#38c7db'}},{name:'云白 · 浅色',colors:{background:'#f7f8fa',surface:'#ffffff',text:'#202735',muted:'#8a92a1',accent:'#209eb7'}},{name:'曜金 · 深色',colors:{background:'#11100e',surface:'#201e19',text:'#fff8e8',muted:'#a79d88',accent:'#e6be73'}}];
@@ -76,6 +81,18 @@ function move<T>(rows:T[],i:number,delta:number){const target=i+delta;if(target>
 <view class="property-note">模块分类与影片来源在运维中心的「页面编排」中配置，当前主题保留已有绑定。</view>
 <Panel title="卡片信息" summary="标题、评分与更新状态"><view v-for="[key,label] in [['showTitle','影片名称'],['showScore','评分'],['showNote','更新状态'],['showYear','年份'],['showMore','查看更多']]" :key="key" class="toggle-row"><text>{{label}}</text><button class="toggle" :class="{on:key==='showYear'?!!section.showYear:(section as any)[key]!==false}" :aria-pressed="key==='showYear'?!!section.showYear:(section as any)[key]!==false" @click="(section as any)[key]=key==='showYear'?!section.showYear:(section as any)[key]===false"><view/></button></view></Panel>
 <button v-if="!fixedId" class="danger outline" @click="emit('removeModule')">删除当前模块</button>
+</template>
+<template v-else-if="tool==='filters'">
+<Panel title="本页子分类" :summary="categoryFilters.length+' 个手动筛选项'" :initial-open="true">
+ <view class="property-note">主分类跟随运营后台的苹果 CMS 绑定。这里只设置当前页面的子分类；“全部”始终回到当前主分类。</view>
+ <view v-for="(filter,index) in categoryFilters" :key="filter.id" class="field">
+  <text>{{index+1}} · 子分类名称</text><input :value="filter.label" maxlength="20" placeholder="例如：动作" @input="updateFilter(index,'label',inputValue($event))"/>
+  <text>苹果 CMS 分类编号</text><input :value="filter.categoryId" maxlength="20" placeholder="填写此子分类的 CMS 编号" @input="updateFilter(index,'categoryId',inputValue($event))"/>
+  <view class="fields-two"><button :disabled="index===0" @click="move(editableFilters(),index,-1)">上移</button><button :disabled="index===categoryFilters.length-1" @click="move(editableFilters(),index,1)">下移</button><button class="danger outline" @click="editableFilters().splice(index,1)">删除</button></view>
+ </view>
+ <view v-if="!categoryFilters.length" class="property-note">尚未设置子分类。预览只展示当前主分类内容。</view>
+ <button :disabled="busy||categoryFilters.length>=20" @click="addFilter">＋ 添加子分类</button>
+</Panel>
 </template>
 <template v-else-if="tool==='navigation'">
 <Panel title="一级目录" summary="顶部分类目录 · 外观设计与运营分类绑定" :initial-open="true">

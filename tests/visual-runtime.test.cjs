@@ -9,7 +9,8 @@ async function visual(){
  if(!runtime)runtime=(async()=>{
   const root=path.resolve(__dirname,'../shared-source/src/domain');
   const schema=await fs.readFile(path.join(root,'visual-schema.json'),'utf8');
-  const source=(await fs.readFile(path.join(root,'visual.ts'),'utf8')).replace("import schema from './visual-schema.json';",'const schema='+schema+';');
+  const category='data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(await fs.readFile(path.join(root,'category.ts'),'utf8'))).toString('base64');
+  const source=(await fs.readFile(path.join(root,'visual.ts'),'utf8')).replace("import schema from './visual-schema.json';",'const schema='+schema+';').replace("'./category'",JSON.stringify(category));
   return import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(source)).toString('base64'));
  })();
  return runtime;

@@ -7,7 +7,7 @@ export function normalizeVisual(input?:VisualStyles,colors?:Theme['colors']):Vis
 export function visualVariables(theme:Theme):Record<string,string> {const visual=normalizeVisual(theme.visual,theme.colors),vars:Record<string,string>={};for(const [group,fields]of Object.entries(visual))for(const [key,value]of Object.entries(fields))vars['--design-'+group+'-'+key]=String(value)+(typeof value==='number'?(key==='duration'?'ms':key==='overlay'||key==='watermarkOpacity'?'':'px'):'');return vars;}
 
 /** Category appearance follows the configured entry ID, never its editable label or CMS binding. */
-export function categoryPageKey(id:string):string {return 'category'+Array.from(id,c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join('');}
+export {categoryPageKey} from './category';
 export function categoryPages(theme:Theme){return theme.categories.filter(n=>n.enabled&&n.page==='category');}
 export function pageDesignFor(theme:Theme,page:string):PageDesign {
  const base=/^category(?:[0-9a-f]{2}){1,64}$/.test(page)?theme.pageDesign?.category:undefined;

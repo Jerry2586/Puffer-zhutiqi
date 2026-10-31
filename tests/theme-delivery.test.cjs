@@ -9,7 +9,7 @@ const {pathToFileURL} = require('node:url');
 const {makeZip} = require('../shared-source/server/archive.cjs');
 const {checkDelivery, checkSnapshot} = require('../scripts/check-theme-delivery.cjs');
 const {authoringFiles, inventory} = require('../scripts/runtime-source.cjs');
-const packager = process.env.HETUN_TEST_PACKAGER ? path.resolve(process.env.HETUN_TEST_PACKAGER) : path.resolve(__dirname, '../../dabaoqi');
+const packager = process.env.HETUN_TEST_PACKAGER ? path.resolve(process.env.HETUN_TEST_PACKAGER) : path.resolve(__dirname, '../.compat/packager');
 const source = path.resolve(__dirname, '../shared-source');
 const load = name => import(pathToFileURL(path.join(source, 'server', name)).href);
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -74,15 +74,17 @@ test('源码备份被两端拒绝，并仍报告客户端差异和缺少实际�
   assert.match(report.checks.find(c => c.name === 'actual-base-compatibility').error, /实际基础APK/);
   assert.ok(report.checks.some(c => c.name === 'shared-renderer-snapshot'));
 });
-test('静态SVG真实导出可同时通过两端导入', async t => {
+test('静态SVG在主题中心保真往返，并明确报告正式打包器0.7.5不支持', async t => {
   const {exportTheme} = await load('export-theme.mjs');
   const {storeAsset} = await load('packages.mjs');
   const dir = await temporary(t), template = await fixture();
   template.draft.brand.logo = await storeAsset(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0L8 8"/></svg>'), 'logo.svg', dir);
   const report = await checkDelivery({theme:await archive(t, await exportTheme(template, dir)), packager, importsOnly:true});
   assert.equal(report.checks.find(c => c.name === 'theme-center-import').status, 'passed');
-  assert.equal(report.checks.find(c => c.name === 'packager-import').status, 'passed');
-  assert.equal(report.importsPassed, true);
+  assert.equal(JSON.parse(await fs.readFile(path.join(packager, 'package.json'), 'utf8')).version, '0.7.5');
+  assert.equal(report.checks.find(c => c.name === 'packager-import').status, 'failed');
+  assert.match(report.checks.find(c => c.name === 'packager-import').error, /路径|文件|格式|素材/);
+  assert.equal(report.importsPassed, false);
   assert.equal(report.acceptanceVerified, false);
 });
 test('隔离检查保留源ZIP字节，拒绝CRC损坏和缺失素材', async t => {

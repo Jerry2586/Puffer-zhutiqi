@@ -17,3 +17,6 @@ bootstrap-admin.txt
 admin-credentials.json
 cloud-license.json
 /.codex/
+
+# Read-only checkout of the published compatibility receiver
+/.compat/

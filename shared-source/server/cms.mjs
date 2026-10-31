@@ -51,7 +51,14 @@ export async function requestCms(base, params, allowPrivate = false) {
   });
 }
 const clean = value => String(value || '').replace(/<[^>]*>/g,'').replace(/&nbsp;|&#160;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-const imageUrl = (value,base) => {try {const url=new URL(String(value || ''),base);return value && ['http:','https:'].includes(url.protocol)?url.toString():'';} catch{return '';}};
+const imageUrl = (value,base) => {
+ try {
+  const raw=String(value||'').trim().replace(/&amp;/g,'&');if(!raw)return '';
+  const site=new URL(base);site.pathname=site.pathname.replace(/\/api\.php\/provide\/vod(?:\/.*)?$/,'/');site.search='';site.hash='';
+  if(!site.pathname.endsWith('/'))site.pathname+='/';
+  const url=new URL(raw,site);return ['http:','https:'].includes(url.protocol)&&!url.username&&!url.password?url.toString():'';
+ }catch{return '';}
+};
 export function normalizeVod(vod,base) {
   const groups=String(vod.vod_play_url || '').split('$$$');
   const labels=String(vod.vod_play_from || '').split('$$$');
@@ -70,5 +77,5 @@ export async function listCms(base, query, allowPrivate) {
 }
 export async function categoriesCms(base, allowPrivate) {
   const raw=await requestCms(base,{ac:'list'},allowPrivate);
-  return (raw.class || []).map(c => ({id:String(c.type_id),name:clean(c.type_name)}));
+  return (raw.class || []).map(c => ({id:String(c.type_id),name:clean(c.type_name),...(c.type_pid!=null?{parentId:String(c.type_pid)}:{})}));
 }

@@ -12,14 +12,14 @@
       "tagline": "好故事，慢慢看。"
     },
     "colors": {
-      "background": "#000000",
-      "surface": "#151515",
-      "text": "#f4f4f4",
-      "muted": "#888888",
-      "accent": "#27c9e3"
+      "background": "#f6f7fb",
+      "surface": "#ffffff",
+      "text": "#1c2434",
+      "muted": "#778295",
+      "accent": "#5264e8"
     },
     "layout": {
-      "posterRadius": 3,
+      "posterRadius": 12,
       "density": "comfortable",
       "heroStyle": "cinema"
     },
@@ -51,8 +51,8 @@
         "enabled": true,
         "style": "grid3",
         "page": "home",
-        "radius": 3,
-        "gap": 5,
+        "radius": 12,
+        "gap": 12,
         "showScore": false,
         "showNote": true,
         "showTitle": true,
@@ -74,8 +74,8 @@
         "enabled": true,
         "style": "scroll",
         "page": "home",
-        "radius": 3,
-        "gap": 5,
+        "radius": 12,
+        "gap": 12,
         "showScore": false,
         "showNote": true,
         "showTitle": true,
@@ -97,8 +97,8 @@
         "enabled": true,
         "style": "grid3",
         "page": "home",
-        "radius": 3,
-        "gap": 5,
+        "radius": 12,
+        "gap": 12,
         "showScore": false,
         "showNote": true,
         "showTitle": true,
@@ -155,12 +155,12 @@
                 "component": "channels"
               },
               {
-                "id": "category-filters",
-                "component": "filters"
-              },
-              {
                 "id": "category-carousel",
                 "component": "carousel"
+              },
+              {
+                "id": "category-filters",
+                "component": "filters"
               },
               {
                 "id": "category-content",
@@ -357,7 +357,7 @@
       "header": "search",
       "member": "violet",
       "mine": "card",
-      "navigation": "text",
+      "navigation": "icons",
       "design": "classic"
     },
     "schedule": [],

@@ -50,7 +50,7 @@ export const memberApi={
  purchase:(groupId:number,period:string,platform:string)=>request<any>('/api/member/purchase','POST',{groupId,period,platform}),
  upgrade:(groupId:number,period:string)=>request<any>('/api/member/upgrade','POST',{groupId,period}),recharge:(price:number,platform:string)=>request<any>('/api/member/recharge','POST',{price,platform})
 };
-export function assetUrl(value:string){if(offlineEditor&&!/^\/api\/preview\/media\/[a-f0-9]{48}$/.test(value)&&!/^\/api\/assets\/[a-f0-9]{64}\.(png|jpg|webp|mp4)$/.test(value)&&!/^data:image\/(png|jpeg|webp);base64,/i.test(value))return '';return value?.startsWith('/api/assets/')?getServiceBase()+value:value;}
+export function assetUrl(value:string){if(offlineEditor&&!/^\/api\/preview\/media\/[a-f0-9]{48}$/.test(value)&&!/^\/api\/assets\/[a-f0-9]{64}\.(png|jpg|webp|svg|mp4)$/.test(value)&&!/^data:image\/(png|jpeg|webp);base64,/i.test(value))return '';return value?.startsWith('/api/assets/')?getServiceBase()+value:value;}
 export async function chooseLocalFile(accept:string):Promise<{name:string;data:string}>{
  // #ifdef H5
  return new Promise((resolve,reject)=>{const input=document.createElement('input');input.type='file';input.accept=accept;input.oncancel=()=>reject(new Error('已取消文件选择。'));input.onchange=async()=>{const file=input.files?.[0];if(!file)return reject(new Error('未选择文件。'));if(file.size>12*1024*1024)return reject(new Error('文件最大12MB。'));const bytes=new Uint8Array(await file.arrayBuffer());let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));resolve({name:file.name,data:btoa(text)});};input.click();});

@@ -44,10 +44,10 @@ watch(()=>configuredCategories.value.map(n=>n.id),ids=>{if(!ids.includes(selecte
 const appearancePage=computed(()=>designPage.value||(w.page==='category'&&selectedCategory.value?categoryPageKey(selectedCategory.value):w.page));
 function chooseCategory(id:string){if(!configuredCategories.value.some(n=>n.id===id))return;selectedCategory.value=id;choosePage('category');}
 const previewTheme=computed(()=>w.previewTheme);
-const layoutPage=computed(()=>designPage.value||w.page);
+const layoutPage=computed(()=>appearancePage.value);
 const pageComponents=computed(()=>skeletonBlocks(w.theme,layoutPage.value).map(b=>({...b,title:skeletonLabels[b.component]})));
 function changeBlock(id:string,key:'visible'|'gap',value:boolean|number){const b=ensureSkeletonPage(w.theme,layoutPage.value)?.blocks.find(b=>b.id===id);if(b)(b as any)[key]=value;}
-function blockTool(component:string){return component==='carousel'?'carousel':['channels','filters'].includes(component)?'navigation':'visual';}
+function blockTool(component:string){return component==='carousel'?'carousel':component==='filters'?'filters':component==='channels'?'navigation':'visual';}
 function blockGroup(component:string){return ({header:'appbar',player:'player',notice:'cards',ads:'cards',profile:'cards',profileHeader:'appbar',shortcuts:'cards',history:'cards',services:'cards',filmInfo:'cards',episodes:'player',recommendations:'cards'} as Record<string,string>)[component]||'cards';}
 const expandedRegions=ref<string[]>(['hero']);
 function toggleRegion(id:string){expandedRegions.value=expandedRegions.value.includes(id)?expandedRegions.value.filter(key=>key!==id):[...expandedRegions.value,id];}

@@ -32,7 +32,7 @@ test('page overrides and local background asset survive actual ZIP export and im
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6juAAAAAASUVORK5CYII=','base64');
  const image=await storeAsset(png,'background.png',assets);
  const draft=validateTheme({...structuredClone(defaultTheme),pageDesign:{category:{background:'#11223380',backgroundImage:image,carousel:true,carouselDesign:{height:280,effect:'fade',autoplay:false},moduleOrder:['category-content','hero'],visual:{cards:{radius:17}}},home:{modules:{content:{style:'mosaic',limit:9,subtitle:'统一模板',showScore:false,showMore:true,title:'精选推荐',columns:2,gap:12,visible:true,radius:18,ratio:'16/9',background:'#12345680',textColor:'#abcdef',titleSize:22}},moduleOrder:['home-content','hero']},together:{background:'#123456'},player:{visual:{player:{progress:'#12ab3450'}}}}});
- draft.pageDesign['category6d6f766965']={carouselDesign:{height:310},visual:{cards:{radius:19}},moduleOrder:['hero','category-content']};
+ draft.pageDesign['category6d6f766965']={carouselDesign:{height:310},visual:{cards:{radius:19}},moduleOrder:['hero','category-content'],categoryFilters:[{id:'action',label:'动作',categoryId:'6'}]};
  draft.sections.push({...draft.sections[0],id:'movie-only',page:'category',categoryEntry:'movie'});
  const zip=await exportTheme({id:'page-design-test',name:'页面设计回归',platform:'mobile',draft},assets);
  const manifest=JSON.parse(readPackage(zip).get('manifest.json'));
@@ -73,4 +73,38 @@ test('fixed video slots persist every selectable style and reject unsupported fi
  }
  for(const bad of [{style:'fake'},{limit:0},{limit:61},{limit:2.5},{showYear:'yes'},{columns:7},{subtitle:'x'.repeat(81)},{source:'category'}])
   assert.throws(()=>validateTheme({...structuredClone(defaultTheme),pageDesign:{home:{modules:{content:bad}}}}));
+});
+
+
+test('manual category filters preserve empty overrides and reject ambiguous bindings',async()=>{
+ const {defaultTheme,validateTheme}=await themeModule();
+ const pageDesign={category:{categoryFilters:[{id:'action',label:'动作',categoryId:'6'}]},category6d6f766965:{categoryFilters:[]}};
+ assert.deepEqual(validateTheme({...structuredClone(defaultTheme),pageDesign}).pageDesign,pageDesign);
+ for(const filters of [[{id:'x',label:'',categoryId:'6'}],[{id:'x',label:'动作',categoryId:''}],[{id:'x',label:'动作',categoryId:'6'},{id:'y',label:'剧情',categoryId:'6'}],[{id:'x',label:'动作',categoryId:'6'},{id:'x',label:'剧情',categoryId:'7'}]])assert.throws(()=>validateTheme({...structuredClone(defaultTheme),pageDesign:{category:{categoryFilters:filters}}}));
+ for(const key of ['category2f','category00','categorye4b8ad','category4142ff'])assert.throws(()=>validateTheme({...structuredClone(defaultTheme),pageDesign:{[key]:{}}}));
+ assert.throws(()=>validateTheme({...structuredClone(defaultTheme),pageDesign:{home:{categoryFilters:[]}}}));
+});
+
+const campaignFixture=()=>({title:'专属活动',subtitle:'真实影片专题',eyebrow:'特别企划',artwork:'',tone:'crimson',featuredId:'',bannerTitle:'发现好片',bannerText:'精彩内容',bannerLabel:'去搜索',bannerPage:'search',groupIds:['campaign-group']});
+test('activity page is category-specific and validates all configuration fields',async()=>{
+ const {defaultTheme,validateTheme}=await themeModule();
+ const config=campaignFixture();const draft={...structuredClone(defaultTheme),pageDesign:{category6163746976697479:{campaign:config}}};
+ assert.deepEqual(validateTheme(draft).pageDesign.category6163746976697479.campaign,config);
+ assert.throws(()=>validateTheme({...draft,pageDesign:{home:{campaign:config}}}));
+ for(const patch of [{tone:'unknown'},{title:''},{title:'x'.repeat(41)},{artwork:'https://untrusted.test/image.png'},{featuredId:'../1'},{bannerPage:'settings'},{groupIds:['a','a']},{groupIds:['../x']},{extra:true}]){
+  assert.throws(()=>validateTheme({...draft,pageDesign:{category:{campaign:{...config,...patch}}}}),JSON.stringify(patch));
+ }
+});
+test('campaign artwork and configuration survive a theme ZIP export/import',async t=>{
+ const {defaultTheme,validateTheme}=await themeModule();
+ const {storeAsset,installPackage}=await import(pathToFileURL(path.join(service,'packages.mjs')).href);
+ const {exportTheme}=await import(pathToFileURL(path.join(service,'export-theme.mjs')).href);
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'hetun-campaign-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6juAAAAAASUVORK5CYII=','base64');
+ const artwork=await storeAsset(png,'campaign.png',path.join(root,'assets'));
+ const draft=validateTheme({...structuredClone(defaultTheme),pageDesign:{category:{campaign:{...campaignFixture(),artwork}}}});
+ const zip=await exportTheme({id:'campaign-test',name:'活动页',platform:'mobile',draft},path.join(root,'assets'));
+ const restored=await installPackage({data:zip.toString('base64')},path.join(root,'restored'));
+ assert.deepEqual(restored.draft.pageDesign,draft.pageDesign);
+ assert.deepEqual(await fs.readFile(path.join(root,'restored',path.basename(artwork))),png);
 });

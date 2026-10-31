@@ -2,20 +2,21 @@
 import type {Theme,NavItem,AppPage} from '@/domain/types';
 import {assetUrl} from '@/services/api';
 import AppIcon from './AppIcon.vue';
-const props=defineProps<{theme:Theme;items:NavItem[];page:AppPage;editing?:boolean}>();
+const props=defineProps<{theme:Theme;items:NavItem[];page:AppPage;entryId?:string;editing?:boolean}>();
 const emit=defineEmits<{navigate:[item:NavItem];select:[]}>();
 const stockSymbols=new Set(['','⌂','▷','♔','○','◉','▦','☆','↗','▤','⚙','⌕','▶','♡','♥']);
 const iconNames:Record<string,string>={home:'home',shortdrama:'shortdrama',member:'member',mine:'mine',category:'category',search:'search',ranking:'ranking',schedule:'schedule',history:'history',library:'favorite',settings:'settings'};
-function artwork(n:NavItem){return props.page===n.page?(n.activeIcon||n.icon||''):(n.icon||'');}
+function chosen(n:NavItem){return props.page===n.page&&(n.page!=='category'||!props.entryId||n.id===props.entryId);}
+function artwork(n:NavItem){return chosen(n)?(n.activeIcon||n.icon||''):(n.icon||'');}
 function customImage(n:NavItem){return /^(assets\/|\/api\/assets\/|https?:\/\/|data:image\/)/i.test(artwork(n))&&!!assetUrl(artwork(n));}
 function choose(n:NavItem){if(props.editing)emit('select');else emit('navigate',n);}
 </script>
 <template>
  <view class="mobile-tabbar" :class="['nav-'+theme.pageStyles.navigation,{'youku-nav':theme.pageStyles.design==='youku'}]" role="navigation" aria-label="底部导航">
-  <button v-for="n in items" :key="n.id" class="nav-item" :class="{chosen:page===n.page}" :aria-label="n.label" :aria-current="page===n.page?'page':undefined" @click="choose(n)">
+  <button v-for="n in items" :key="n.id" class="nav-item" :class="{chosen:chosen(n)}" :aria-label="n.label" :aria-current="chosen(n)?'page':undefined" @click="choose(n)">
    <view class="nav-art">
     <image v-if="customImage(n)" :src="assetUrl(artwork(n))" mode="aspectFit"/>
-    <AppIcon v-else-if="stockSymbols.has(artwork(n))" :name="iconNames[n.page]||'category'" :active="page===n.page" :size="Number(theme.visual?.navigation.iconSize||23)" :color="String(page===n.page?theme.visual?.navigation.active||theme.colors.accent:theme.visual?.navigation.text||theme.colors.muted)"/>
+    <AppIcon v-else-if="stockSymbols.has(artwork(n))" :name="iconNames[n.page]||'category'" :active="chosen(n)" :size="Number(theme.visual?.navigation.iconSize||23)" :color="String(chosen(n)?theme.visual?.navigation.active||theme.colors.accent:theme.visual?.navigation.text||theme.colors.muted)"/>
     <text v-else class="custom-glyph">{{artwork(n)}}</text>
    </view>
    <text class="nav-label">{{n.label}}</text><view class="nav-marker"/>

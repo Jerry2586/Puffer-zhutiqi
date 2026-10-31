@@ -28,7 +28,14 @@ jobs:
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag and package version differ' }
       - name: Install dependencies outside source
         run: node scripts/setup.cjs
-      - name: Test offline editor and operations boundaries using pinned local fixture
+      - name: Check out published packager 0.7.5 for compatibility checks
+        uses: actions/checkout@v4
+        with:
+          repository: Jerry2586/Puffer-dabaoqi
+          ref: 797e0f7779984e32698028d1eae10b13e8d5758c
+          path: .compat/packager
+          persist-credentials: false
+      - name: Test offline editor and published packager boundaries
         run: node --test tests/*.test.cjs
       - name: Type check, compile and build Windows programs
         run: node scripts/build.cjs
